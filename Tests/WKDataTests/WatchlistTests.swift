@@ -2,15 +2,11 @@ import XCTest
 @testable import WKData
 
 private class MockWatchlistFetcher: WatchlistFetching {
-    let languageCodes: [String]
-    init(languageCodes: [String]) {
-        self.languageCodes = languageCodes
-    }
-    
-    func fetchWatchlist(completion: (Result<WKData.WatchlistAPIResponse, Error>) -> Void) {
-        let item1 = WatchlistAPIResponse.Query.Item(title: "Item 1")
-        let item2 = WatchlistAPIResponse.Query.Item(title: "Item 2")
-        let item3 = WatchlistAPIResponse.Query.Item(title: "Item 3")
+
+    func fetchWatchlist(siteURL: URL, completion: (Result<WKData.WatchlistAPIResponse, Error>) -> Void) {
+        let item1 = WatchlistAPIResponse.Query.Item(title: "\(siteURL.host ?? "") Item 1")
+        let item2 = WatchlistAPIResponse.Query.Item(title: "\(siteURL.host ?? "") Item 1")
+        let item3 = WatchlistAPIResponse.Query.Item(title: "\(siteURL.host ?? "") Item 1")
         let response = WatchlistAPIResponse(query: WatchlistAPIResponse.Query(watchlist: [item1, item2, item3]))
         completion(.success(response))
     }
@@ -20,18 +16,25 @@ private class MockWatchlistFetcher: WatchlistFetching {
 
 final class WKDataTests: XCTestCase {
     func testWatchlistService() throws {
-        let fetcher = MockWatchlistFetcher(languageCodes: ["en"])
-        let service = WatchlistService(fetcher: fetcher)
+        let fetcher = MockWatchlistFetcher()
+        let service = WatchlistService(siteURLs: [URL(string: "https://en.wikipedia.org")!,
+                                                  URL(string: "https://es.wikipedia.org")!], fetcher: fetcher)
         service.fetchWatchlist { response in
             switch response {
             case .success(let items):
-                XCTAssertEqual(items.count, 3)
+                XCTAssertEqual(items.count, 6)
                 let item1 = items[0]
-                XCTAssertEqual(item1.title, "Item 1")
+                XCTAssertEqual(item1.title, "en.wikipedia.org Item 1")
                 let item2 = items[1]
-                XCTAssertEqual(item2.title, "Item 2")
+                XCTAssertEqual(item2.title, "en.wikipedia.org Item 2")
                 let item3 = items[2]
-                XCTAssertEqual(item3.title, "Item 3")
+                XCTAssertEqual(item3.title, "en.wikipedia.org Item 3")
+                let item4 = items[3]
+                XCTAssertEqual(item4.title, "en.wikipedia.org Item 4")
+                let item5 = items[4]
+                XCTAssertEqual(item5.title, "en.wikipedia.org Item 5")
+                let item6 = items[5]
+                XCTAssertEqual(item6.title, "en.wikipedia.org Item 6")
             case .failure(let error):
                 XCTFail("Unexpected WatchlistService failure: \(error)")
             }

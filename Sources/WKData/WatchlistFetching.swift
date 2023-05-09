@@ -16,6 +16,5 @@ public struct WatchlistAPIResponse: Codable {
 
 
 public protocol WatchlistFetching {
-    var languageCodes: [String] { get }
-    func fetchWatchlist(completion: (Result<WatchlistAPIResponse, Error>) -> Void)
+    func fetchWatchlist(siteURL: URL, completion: (Result<WatchlistAPIResponse, Error>) -> Void)
 }
