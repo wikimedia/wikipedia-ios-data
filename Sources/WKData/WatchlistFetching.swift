@@ -2,16 +2,16 @@ import Foundation
 
 public struct WatchlistAPIResponse: Codable {
     
-    struct Query: Codable {
+    public struct Query: Codable {
         
-        struct Item: Codable {
-            let title: String
+        public struct Item: Codable {
+            public let title: String
         }
         
-        let watchlist: [Item]
+        public let watchlist: [Item]
     }
     
-    let query: Query
+    public let query: Query
 }
 
 
