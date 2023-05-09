@@ -10,8 +10,6 @@ private class MockWatchlistFetcher: WatchlistFetching {
         let response = WatchlistAPIResponse(query: WatchlistAPIResponse.Query(watchlist: [item1, item2, item3]))
         completion(.success(response))
     }
-    
-    
 }
 
 final class WKDataTests: XCTestCase {

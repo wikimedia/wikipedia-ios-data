@@ -16,5 +16,5 @@ public struct WatchlistAPIResponse: Codable {
 
 
 public protocol WatchlistFetching {
-    func fetchWatchlist(siteURL: URL, completion: (Result<WatchlistAPIResponse, Error>) -> Void)
+    func fetchWatchlist(siteURL: URL, completion: @escaping (Result<WatchlistAPIResponse, Error>) -> Void)
 }
