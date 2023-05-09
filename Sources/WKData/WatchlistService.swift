@@ -1,7 +1,7 @@
 import Foundation
 
 public struct WatchlistItem {
-    let title: String
+    public let title: String
 }
 
 public final class WatchlistService {
