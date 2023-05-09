@@ -1,6 +1,6 @@
 import Foundation
 
-struct WatchlistAPIResponse: Codable {
+public struct WatchlistAPIResponse: Codable {
     
     struct Query: Codable {
         
