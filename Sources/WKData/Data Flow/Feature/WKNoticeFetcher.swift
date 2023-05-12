@@ -8,7 +8,7 @@ public class WKNoticeFetcher {
 		self.networkService = networkService
 	}
 
-	public func fetchNotices(for title: String, completion: @escaping (Result<[WKNotice], Error>)) {
+	public func fetchNotices(for title: String, completion: @escaping (Result<[WKNotice], Error>) -> Void) {
 		let parameters: [String: Any] = [
 			"action": "visualeditor",
 			"paction": "metadata",
