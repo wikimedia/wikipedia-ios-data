@@ -22,7 +22,14 @@ public class WKNoticeFetcher {
 		let request = WKNetworkRequest(url: url, method: .GET, parameters: parameters)
 
 		networkService.perform(request: request, completion: { result in
-			dump(result)
+			if case let .success(dictionary) = result {
+				// decode
+				completion(
+					.success(
+						[WKNotice(name: dictionary?.description ?? "", description: "")]
+					)
+				)
+			}
 		})
 	}
 
