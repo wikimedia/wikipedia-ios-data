@@ -2,13 +2,17 @@ import Foundation
 
 public class WKNoticeFetcher {
 
-	let networkService: WKNetworkService
-
-	public init(networkService: WKNetworkService) {
-		self.networkService = networkService
+	public enum WKNoticeFetcherError: Error {
+		case someFetcherError
+		case mediawikiServiceUnavailable
 	}
 
-	public func fetchNotices(for title: String, completion: @escaping (Result<[WKNotice], Error>) -> Void) {
+	public func fetchNotices(for title: String, completion: @escaping (Result<[WKNotice], WKNoticeFetcherError>) -> Void) {
+		guard let networkService = WKDataEnvironment.current.mediawikiNetworkService else {
+			completion(.failure(WKNoticeFetcherError.mediawikiServiceUnavailable))
+			return
+		}
+
 		let parameters: [String: Any] = [
 			"action": "visualeditor",
 			"paction": "metadata",
@@ -29,6 +33,10 @@ public class WKNoticeFetcher {
 						[WKNotice(name: dictionary?.description ?? "", description: "")]
 					)
 				)
+			} else if case let .failure(error) = result {
+				// parse error
+				dump(error)
+				completion(.failure(WKNoticeFetcherError.someFetcherError))
 			}
 		})
 	}
