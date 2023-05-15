@@ -7,6 +7,8 @@ public class WKNoticeFetcher {
 		case mediawikiServiceUnavailable
 	}
 
+	public init() { }
+
 	public func fetchNotices(for title: String, completion: @escaping (Result<[WKNotice], WKNoticeFetcherError>) -> Void) {
 		guard let networkService = WKDataEnvironment.current.mediawikiNetworkService else {
 			completion(.failure(WKNoticeFetcherError.mediawikiServiceUnavailable))
