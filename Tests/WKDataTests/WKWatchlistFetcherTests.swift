@@ -75,4 +75,58 @@ final class WKWatchlistFetcherTests: XCTestCase {
         
         XCTAssertEqual(first.timestamp, testDate, "Unexpected watchlist item timestamp property")
     }
+    
+    func testPostWatchArticleExpiryNever() {
+         let fetcher = WKWatchlistFetcher()
+
+         let expectation = XCTestExpectation(description: "Post Watch Article Expiry Never")
+
+         var resultToTest: Result<Void, Error>?
+         fetcher.watch(title: "Cat", project: enProject, expiry: .never) { result in
+             resultToTest = result
+             expectation.fulfill()
+         }
+
+         wait(for: [expectation], timeout: 10.0)
+
+         guard case .success(_) = resultToTest else {
+             return XCTFail("Unexpected result")
+         }
+     }
+
+     func testPostWatchArticleExpiryDate() {
+         let fetcher = WKWatchlistFetcher()
+
+         let expectation = XCTestExpectation(description: "Post Watch Article Expiry Date")
+
+         var resultToTest: Result<Void, Error>?
+         fetcher.watch(title: "Cat", project: enProject, expiry: .oneMonth) { result in
+             resultToTest = result
+             expectation.fulfill()
+         }
+
+         wait(for: [expectation], timeout: 10.0)
+
+         guard case .success(_) = resultToTest else {
+             return XCTFail("Unexpected result")
+         }
+     }
+
+     func testPostUnwatchArticle() {
+         let fetcher = WKWatchlistFetcher()
+
+         let expectation = XCTestExpectation(description: "Post Watch Unwatch Article")
+
+         var resultToTest: Result<Void, Error>?
+         fetcher.unwatch(title: "Cat", project: enProject) { result in
+             resultToTest = result
+             expectation.fulfill()
+         }
+
+         wait(for: [expectation], timeout: 10.0)
+
+         guard case .success(_) = resultToTest else {
+             return XCTFail("Unexpected result")
+         }
+     }
 }
