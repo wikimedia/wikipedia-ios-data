@@ -26,6 +26,11 @@ public enum WKWatchlistExpiryType: String {
     case sixMonths = "6 months"
 }
 
+public struct WKPageWatchStatus {
+    public let watched: Bool
+    public let userHasRollbackRights: Bool?
+}
+
 fileprivate struct WatchlistAPIResponse: Codable {
     
     struct Query: Codable {
@@ -57,6 +62,27 @@ fileprivate struct WatchlistAPIResponse: Codable {
     
     let query: Query?
     let errors: [WKMediaWikiError]?
+}
+
+fileprivate struct PageWatchStatusAndRollbackResponse: Codable {
+
+    struct Query: Codable {
+
+        struct Page: Codable {
+            let title: String
+            let watched: Bool
+        }
+
+        struct UserInfo: Codable {
+            let name: String
+            let rights: [String]
+        }
+
+        let pages: [Page]
+        let userinfo: UserInfo?
+    }
+
+    let query: Query
 }
 
 public class WKWatchlistFetcher {
@@ -253,6 +279,54 @@ public class WKWatchlistFetcher {
                  completion(.success(()))
              case .failure(let error):
                  print(error)
+             }
+         }
+     }
+    
+    // MARK: GET Watch Status and Rollback Rights
+     
+     public func fetchWatchStatus(title: String, project: WKProject, needsRollbackRights: Bool = false, completion: @escaping (Result<WKPageWatchStatus, Error>) -> Void) {
+         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
+             completion(.failure(WKWatchlistFetcherError.mediawikiServiceUnavailable))
+             return
+         }
+
+         var parameters = [
+                     "action": "query",
+                     "prop": "info",
+                     "inprop": "watched",
+                     "titles": title,
+                     "errorsuselocal": "1",
+                     "errorformat": "html",
+                     "format": "json",
+                     "formatversion": "2"
+                 ]
+
+         if needsRollbackRights {
+             parameters["meta"] = "userinfo"
+             parameters["uiprop"] = "rights"
+         }
+
+         guard let url = URL.mediaWikiAPIURL(project: project) else {
+             return
+         }
+
+         let request = WKNetworkRequest(url: url, method: .GET, parameters: parameters)
+
+         networkService.performDecodableGET(request: request) { (result: Result<PageWatchStatusAndRollbackResponse, Error>) in
+             switch result {
+             case .success(let response):
+
+                 guard let watched = response.query.pages.first?.watched else {
+                     completion(.failure(WKWatchlistFetcherError.unexpectedResponse))
+                     return
+                 }
+
+                 let userHasRollbackRights = response.query.userinfo?.rights.contains("rollback")
+                 let status = WKPageWatchStatus(watched: watched, userHasRollbackRights: userHasRollbackRights)
+                 completion(.success(status))
+             case .failure(let error):
+                 completion(.failure(error))
              }
          }
      }
