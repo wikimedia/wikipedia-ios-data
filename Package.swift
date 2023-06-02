@@ -34,7 +34,3 @@ let package = Package(
             dependencies: ["WKData", "WKDataMocks"]),
     ]
 )
-
-// TTD Tomorrow:
-
-// Make a separate mocks target / product / whatevs? WKDataTests can depend on it, (it will contain mockmediawikinetworkservice). It could also contain a mock WKWatchlistFetcher. Demo could then import WKDataMocks, and inject it's mock watchlist fetcher into the view model.
