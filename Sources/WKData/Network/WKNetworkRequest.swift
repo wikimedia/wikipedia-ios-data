@@ -1,6 +1,9 @@
 import Foundation
 
 public struct WKNetworkRequest {
+    public enum TokenType {
+        case watch
+    }
 
 	public enum Method: String {
 		case GET
@@ -12,6 +15,13 @@ public struct WKNetworkRequest {
 
 	public let url: URL?
 	public let method: Method
+    public let tokenType: TokenType?
 	public let parameters: [String: Any]?
 
+    internal init(url: URL? = nil, method: WKNetworkRequest.Method, tokenType: WKNetworkRequest.TokenType? = nil, parameters: [String : Any]? = nil) {
+        self.url = url
+        self.method = method
+        self.tokenType = tokenType
+        self.parameters = parameters
+    }
 }
