@@ -18,6 +18,14 @@ public struct WKWatchlist {
     public let items: [Item]
 }
 
+public enum WKWatchlistExpiryType: String {
+    case never
+    case oneWeek = "1 week"
+    case oneMonth = "1 month"
+    case threeMonths = "3 months"
+    case sixMonths = "6 months"
+}
+
 fileprivate struct WatchlistAPIResponse: Codable {
     
     struct Query: Codable {
@@ -166,4 +174,86 @@ public class WKWatchlistFetcher {
         
         return items
     }
+    
+    // MARK: POST Watch Item
+     
+     public func watch(title: String, project: WKProject, expiry: WKWatchlistExpiryType, completion: @escaping (Result<Void, Error>) -> Void) {
+
+         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
+             completion(.failure(WKWatchlistFetcherError.mediawikiServiceUnavailable))
+             return
+         }
+
+         let parameters = [
+             "action": "watch",
+             "titles": title,
+             "expiry": expiry.rawValue,
+             "format": "json",
+             "formatversion": "2",
+             "errorformat": "html",
+             "errorsuselocal": "1"
+         ]
+
+         guard let url = URL.mediaWikiAPIURL(project: project) else {
+             completion(.failure(WKWatchlistFetcherError.unabletoDetermineProject))
+             return
+         }
+
+         let request = WKNetworkRequest(url: url, method: .POST, parameters: parameters)
+         networkService.perform(request: request, tokenType: .watch) { result in
+             switch result {
+             case .success(let response):
+                 guard let watched = (response?["watch"] as? [[String: Any]])?.first?["watched"] as? Bool,
+                 watched == true else {
+                     completion(.failure(WKWatchlistFetcherError.unexpectedResponse))
+                     return
+                 }
+
+                 completion(.success(()))
+             case .failure(let error):
+                 print(error)
+             }
+         }
+     }
+
+     // MARK: POST Unwatch Item
+     
+     public func unwatch(title: String, project: WKProject, completion: @escaping (Result<Void, Error>) -> Void) {
+
+         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
+             completion(.failure(WKWatchlistFetcherError.mediawikiServiceUnavailable))
+             return
+         }
+
+         let parameters = [
+             "action": "watch",
+             "unwatch": "1",
+             "titles": title,
+             "format": "json",
+             "formatversion": "2",
+             "errorformat": "html",
+             "errorsuselocal": "1"
+         ]
+
+         guard let url = URL.mediaWikiAPIURL(project: project) else {
+             completion(.failure(WKWatchlistFetcherError.unabletoDetermineProject))
+             return
+         }
+
+         let request = WKNetworkRequest(url: url, method: .POST, parameters: parameters)
+         networkService.perform(request: request, tokenType: .watch) { result in
+             switch result {
+             case .success(let response):
+                 guard let unwatched = (response?["watch"] as? [[String: Any]])?.first?["unwatched"] as? Bool,
+                       unwatched == true else {
+                     completion(.failure(WKWatchlistFetcherError.unexpectedResponse))
+                     return
+                 }
+
+                 completion(.success(()))
+             case .failure(let error):
+                 print(error)
+             }
+         }
+     }
 }
