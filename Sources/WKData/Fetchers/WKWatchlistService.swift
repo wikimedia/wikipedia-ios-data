@@ -85,9 +85,9 @@ fileprivate struct PageWatchStatusAndRollbackResponse: Codable {
     let query: Query
 }
 
-public class WKWatchlistFetcher {
+public class WKWatchlistService {
 
-    public enum WKWatchlistFetcherError: Error {
+    public enum WKWatchlistServiceError: Error {
         case unexpectedResponse
         case networkFailure(Error)
         case mediawikiServiceUnavailable
@@ -102,13 +102,13 @@ public class WKWatchlistFetcher {
     public func fetchWatchlist(completion: @escaping (Result<WKWatchlist, Error>) -> Void) {
         
         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-            completion(.failure(WKWatchlistFetcherError.mediawikiServiceUnavailable))
+            completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
             return
         }
         
         let appLanguages = WKDataEnvironment.current.appData.appLanguages
         guard !appLanguages.isEmpty else {
-            completion(.failure(WKWatchlistFetcherError.appLanguagesUnavailable))
+            completion(.failure(WKWatchlistServiceError.appLanguagesUnavailable))
             return
         }
         
@@ -162,7 +162,7 @@ public class WKWatchlistFetcher {
                     }
                     
                     guard let query = apiResponse.query else {
-                        errors.append(WKWatchlistFetcherError.unexpectedResponse)
+                        errors.append(WKWatchlistServiceError.unexpectedResponse)
                         return
                     }
                     
@@ -206,7 +206,7 @@ public class WKWatchlistFetcher {
      public func watch(title: String, project: WKProject, expiry: WKWatchlistExpiryType, completion: @escaping (Result<Void, Error>) -> Void) {
 
          guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-             completion(.failure(WKWatchlistFetcherError.mediawikiServiceUnavailable))
+             completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
              return
          }
 
@@ -221,7 +221,7 @@ public class WKWatchlistFetcher {
          ]
 
          guard let url = URL.mediaWikiAPIURL(project: project) else {
-             completion(.failure(WKWatchlistFetcherError.unabletoDetermineProject))
+             completion(.failure(WKWatchlistServiceError.unabletoDetermineProject))
              return
          }
 
@@ -231,7 +231,7 @@ public class WKWatchlistFetcher {
              case .success(let response):
                  guard let watched = (response?["watch"] as? [[String: Any]])?.first?["watched"] as? Bool,
                  watched == true else {
-                     completion(.failure(WKWatchlistFetcherError.unexpectedResponse))
+                     completion(.failure(WKWatchlistServiceError.unexpectedResponse))
                      return
                  }
 
@@ -247,7 +247,7 @@ public class WKWatchlistFetcher {
      public func unwatch(title: String, project: WKProject, completion: @escaping (Result<Void, Error>) -> Void) {
 
          guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-             completion(.failure(WKWatchlistFetcherError.mediawikiServiceUnavailable))
+             completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
              return
          }
 
@@ -262,7 +262,7 @@ public class WKWatchlistFetcher {
          ]
 
          guard let url = URL.mediaWikiAPIURL(project: project) else {
-             completion(.failure(WKWatchlistFetcherError.unabletoDetermineProject))
+             completion(.failure(WKWatchlistServiceError.unabletoDetermineProject))
              return
          }
 
@@ -272,7 +272,7 @@ public class WKWatchlistFetcher {
              case .success(let response):
                  guard let unwatched = (response?["watch"] as? [[String: Any]])?.first?["unwatched"] as? Bool,
                        unwatched == true else {
-                     completion(.failure(WKWatchlistFetcherError.unexpectedResponse))
+                     completion(.failure(WKWatchlistServiceError.unexpectedResponse))
                      return
                  }
 
@@ -287,7 +287,7 @@ public class WKWatchlistFetcher {
      
      public func fetchWatchStatus(title: String, project: WKProject, needsRollbackRights: Bool = false, completion: @escaping (Result<WKPageWatchStatus, Error>) -> Void) {
          guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-             completion(.failure(WKWatchlistFetcherError.mediawikiServiceUnavailable))
+             completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
              return
          }
 
@@ -318,7 +318,7 @@ public class WKWatchlistFetcher {
              case .success(let response):
 
                  guard let watched = response.query.pages.first?.watched else {
-                     completion(.failure(WKWatchlistFetcherError.unexpectedResponse))
+                     completion(.failure(WKWatchlistServiceError.unexpectedResponse))
                      return
                  }
 
