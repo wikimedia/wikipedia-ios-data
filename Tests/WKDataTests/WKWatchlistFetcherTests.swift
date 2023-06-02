@@ -129,4 +129,52 @@ final class WKWatchlistFetcherTests: XCTestCase {
              return XCTFail("Unexpected result")
          }
      }
+    
+    func testFetchWatchStatus() {
+         let fetcher = WKWatchlistFetcher()
+
+         let expectation = XCTestExpectation(description: "Fetch Watch Status")
+         var statusToTest: WKPageWatchStatus?
+         fetcher.fetchWatchStatus(title: "Cat", project: enProject) { result in
+             switch result {
+             case .success(let status):
+                 statusToTest = status
+             case .failure(let error):
+                 XCTFail("Failure fetching watch status: \(error)")
+             }
+             expectation.fulfill()
+         }
+
+         guard let statusToTest else {
+             XCTFail("Missing statusToTest")
+             return
+         }
+
+         XCTAssertTrue(statusToTest.watched)
+         XCTAssertNil(statusToTest.userHasRollbackRights)
+     }
+
+     func testFetchWatchStatusWithRollbackRights() {
+         let fetcher = WKWatchlistFetcher()
+
+         let expectation = XCTestExpectation(description: "Fetch Watch Status")
+         var statusToTest: WKPageWatchStatus?
+         fetcher.fetchWatchStatus(title: "Cat", project: enProject, needsRollbackRights: true) { result in
+             switch result {
+             case .success(let status):
+                 statusToTest = status
+             case .failure(let error):
+                 XCTFail("Failure fetching watch status: \(error)")
+             }
+             expectation.fulfill()
+         }
+
+         guard let statusToTest else {
+             XCTFail("Missing statusToTest")
+             return
+         }
+
+         XCTAssertFalse(statusToTest.watched)
+         XCTAssertTrue((statusToTest.userHasRollbackRights ?? false))
+     }
 }

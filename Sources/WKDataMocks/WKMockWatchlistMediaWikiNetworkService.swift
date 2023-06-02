@@ -48,9 +48,41 @@ fileprivate extension WKData.WKNetworkRequest {
 
          return method == .POST && action == "watch" && unwatch == "1"
      }
+    
+    var isWatchlistGetWatchStatus: Bool {
+        guard let action = parameters?["action"] as? String,
+              let prop = parameters?["prop"] as? String,
+              let inprop = parameters?["inprop"] as? String else {
+            return false
+        }
+
+        return method == .GET && action == "query" &&
+        prop == "info" &&
+        inprop == "watched" &&
+        parameters?["meta"] == nil &&
+        parameters?["uiprop"] == nil
+    }
+
+    var isWatchlistGetWatchStatusWithRollbackRights: Bool {
+        guard let action = parameters?["action"] as? String,
+              let prop = parameters?["prop"] as? String,
+              let inprop = parameters?["inprop"] as? String,
+              let meta = parameters?["meta"] as? String,
+              let uiprop = parameters?["uiprop"] as? String else {
+            return false
+        }
+
+        return method == .GET && action == "query" &&
+        prop == "info" &&
+        inprop == "watched" &&
+        meta == "userinfo" &&
+        uiprop == "rights"
+    }
 }
 
 public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
+    
+    public var randomizeGetWatchStatusResponse: Bool = false // used in Components Demo app
     
     public init() {
         
@@ -127,6 +159,39 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
             return jsonData
         } else if request.isWatchlistPostUnwatchArticle {
             guard let url = Bundle.module.url(forResource: "watchlist-post-unwatch-article", withExtension: "json"),
+                  let jsonData = try? Data(contentsOf: url) else {
+                return nil
+            }
+
+            return jsonData
+        } else if request.isWatchlistGetWatchStatusWithRollbackRights {
+            
+            let resourceName: String
+            if randomizeGetWatchStatusResponse {
+                let needsWatched = Int.random(in: 1...2) == 1
+                resourceName = needsWatched ? "watchlist-get-watch-status-and-rollback-rights-watched" : "watchlist-get-watch-status-and-rollback-rights-unwatched"
+            } else {
+                resourceName = "watchlist-get-watch-status-and-rollback-rights-unwatched"
+            }
+
+            guard let url = Bundle.module.url(forResource: resourceName, withExtension: "json"),
+                  let jsonData = try? Data(contentsOf: url) else {
+                return nil
+            }
+
+            return jsonData
+
+        } else if request.isWatchlistGetWatchStatus {
+
+            let resourceName: String
+            if randomizeGetWatchStatusResponse {
+                let needsWatched = Int.random(in: 1...2) == 1
+                resourceName = needsWatched ? "watchlist-get-watch-status-watched" : "watchlist-get-watch-status-unwatched"
+            } else {
+                resourceName = "watchlist-get-watch-status-watched"
+            }
+
+            guard let url = Bundle.module.url(forResource: resourceName, withExtension: "json"),
                   let jsonData = try? Data(contentsOf: url) else {
                 return nil
             }
