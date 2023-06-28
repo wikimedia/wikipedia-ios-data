@@ -330,4 +330,45 @@ public class WKWatchlistService {
              }
          }
      }
+    
+    // MARK: POST Rollback Page
+    
+    public func rollback(title: String, project: WKProject, username: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        
+        guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
+            completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+            return
+        }
+
+        let parameters = [
+            "action": "rollback",
+            "title": title,
+            "user": username,
+            "format": "json",
+            "formatversion": "2",
+            "errorformat": "html",
+            "errorsuselocal": "1"
+        ]
+
+        guard let url = URL.mediaWikiAPIURL(project: project) else {
+            completion(.failure(WKWatchlistServiceError.unabletoDetermineProject))
+            return
+        }
+
+        let request = WKNetworkRequest(url: url, method: .POST, parameters: parameters)
+        networkService.perform(request: request, tokenType: .rollback) { result in
+            switch result {
+            case .success(let response):
+                guard let _ = (response?["rollback"] as? [String: Any])?["summary"] as? String else {
+                    completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                    return
+                }
+
+                completion(.success(()))
+            case .failure(let error):
+                print(error)
+            }
+        }
+        
+    }
 }

@@ -78,6 +78,14 @@ fileprivate extension WKData.WKNetworkRequest {
         meta == "userinfo" &&
         uiprop == "rights"
     }
+    
+    var isWatchlistPostRollback: Bool {
+        guard let action = parameters?["action"] as? String else {
+            return false
+        }
+
+        return method == .POST && action == "rollback"
+    }
 }
 
 public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
@@ -192,6 +200,13 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
             }
 
             guard let url = Bundle.module.url(forResource: resourceName, withExtension: "json"),
+                  let jsonData = try? Data(contentsOf: url) else {
+                return nil
+            }
+
+            return jsonData
+        } else if request.isWatchlistPostRollback {
+            guard let url = Bundle.module.url(forResource: "watchlist-post-rollback-article", withExtension: "json"),
                   let jsonData = try? Data(contentsOf: url) else {
                 return nil
             }

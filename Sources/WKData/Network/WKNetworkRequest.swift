@@ -3,6 +3,7 @@ import Foundation
 public struct WKNetworkRequest {
     public enum TokenType {
         case watch
+        case rollback
     }
 
 	public enum Method: String {

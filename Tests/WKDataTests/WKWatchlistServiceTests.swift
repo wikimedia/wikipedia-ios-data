@@ -177,4 +177,22 @@ final class WKWatchlistServiceTests: XCTestCase {
          XCTAssertFalse(statusToTest.watched)
          XCTAssertTrue((statusToTest.userHasRollbackRights ?? false))
      }
+    
+    func testPostRollbackArticle() {
+        let service = WKWatchlistService()
+
+        let expectation = XCTestExpectation(description: "Post Rollback Article")
+
+        var resultToTest: Result<Void, Error>?
+        service.rollback(title: "Cat", project: enProject, username: "Amigao") { result in
+            resultToTest = result
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 10.0)
+
+        guard case .success(_) = resultToTest else {
+            return XCTFail("Unexpected result")
+        }
+    }
 }
