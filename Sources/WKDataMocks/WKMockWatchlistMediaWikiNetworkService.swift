@@ -86,6 +86,28 @@ fileprivate extension WKData.WKNetworkRequest {
 
         return method == .POST && action == "rollback"
     }
+    
+    var isWatchlistGetUndoSummaryPrefix: Bool {
+
+        guard let action = parameters?["action"] as? String,
+              let meta = parameters?["meta"] as? String,
+              let ammessages = parameters?["ammessages"] as? String else {
+            return false
+        }
+
+        return method == .GET && action == "query" && meta == "allmessages" && ammessages == "undo-summary"
+    }
+    
+    var isWatchlistPostUndo: Bool {
+        guard let action = parameters?["action"] as? String,
+              let title = parameters?["title"] as? String,
+              let summary = parameters?["summary"] as? String,
+              let undo = parameters?["undo"] as? String else {
+            return false
+        }
+
+        return method == .POST && action == "edit" && !title.isEmpty && !summary.isEmpty && !undo.isEmpty
+    }
 }
 
 public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
@@ -207,6 +229,20 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
             return jsonData
         } else if request.isWatchlistPostRollback {
             guard let url = Bundle.module.url(forResource: "watchlist-post-rollback-article", withExtension: "json"),
+                  let jsonData = try? Data(contentsOf: url) else {
+                return nil
+            }
+
+            return jsonData
+        } else if request.isWatchlistGetUndoSummaryPrefix {
+            guard let url = Bundle.module.url(forResource: "watchlist-get-undo-summary-prefix", withExtension: "json"),
+                  let jsonData = try? Data(contentsOf: url) else {
+                return nil
+            }
+
+            return jsonData
+        } else if request.isWatchlistPostUndo {
+            guard let url = Bundle.module.url(forResource: "watchlist-post-undo-article", withExtension: "json"),
                   let jsonData = try? Data(contentsOf: url) else {
                 return nil
             }

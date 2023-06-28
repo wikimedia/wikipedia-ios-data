@@ -2,6 +2,7 @@ import Foundation
 
 public struct WKNetworkRequest {
     public enum TokenType {
+        case csrf
         case watch
         case rollback
     }

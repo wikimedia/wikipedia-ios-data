@@ -85,6 +85,25 @@ fileprivate struct PageWatchStatusAndRollbackResponse: Codable {
     let query: Query
 }
 
+fileprivate struct UndoRevisionSummaryTextResponse: Codable {
+    
+    struct Query: Codable {
+        
+        struct Messages: Codable {
+            let name: String
+            let content: String
+        }
+        
+        let messages: [Messages]
+        
+        enum CodingKeys: String, CodingKey {
+            case messages = "allmessages"
+        }
+    }
+    
+    let query: Query
+}
+
 public class WKWatchlistService {
 
     public enum WKWatchlistServiceError: Error {
@@ -369,6 +388,99 @@ public class WKWatchlistService {
                 print(error)
             }
         }
+    }
+    
+    // MARK: POST Undo Revision
+    
+    public func undo(title: String, revisionID: UInt, summary: String, username: String, project: WKProject, completion: @escaping (Result<Void, Error>) -> Void) {
+
+        guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
+            completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+            return
+        }
         
+        fetchUndoRevisionSummaryPrefixText(revisionID: revisionID, username: username, project: project) { result in
+            switch result {
+            case .success(let summaryPrefix):
+                
+                let parameters = [
+                    "action": "edit",
+                    "title": title,
+                    "summary": summaryPrefix + " " + summary,
+                    "undo": String(revisionID),
+                    "format": "json",
+                    "formatversion": "2",
+                    "errorformat": "html",
+                    "errorsuselocal": "1"
+                ]
+
+                guard let url = URL.mediaWikiAPIURL(project: project) else {
+                    completion(.failure(WKWatchlistServiceError.unabletoDetermineProject))
+                    return
+                }
+
+                let request = WKNetworkRequest(url: url, method: .POST, parameters: parameters)
+                networkService.perform(request: request, tokenType: .csrf) { result in
+                    switch result {
+                    case .success(let response):
+                        guard let result = (response?["edit"] as? [String: Any])?["result"] as? String,
+                              result == "Success" else {
+                            completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                            return
+                        }
+
+                        completion(.success(()))
+                    case .failure(let error):
+                        print(error)
+                    }
+                }
+                
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    private func fetchUndoRevisionSummaryPrefixText(revisionID: UInt, username: String, project: WKProject, completion: @escaping (Result<String, Error>) -> Void) {
+        
+        guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
+            completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+            return
+        }
+
+        let parameters = [
+                    "action": "query",
+                    "meta": "allmessages",
+                    "amenableparser": "1",
+                    "ammessages": "undo-summary",
+                    "amargs": "\(revisionID)|\(username)",
+                    "errorsuselocal": "1",
+                    "errorformat": "html",
+                    "format": "json",
+                    "formatversion": "2"
+                ]
+
+        guard let url = URL.mediaWikiAPIURL(project: project) else {
+            return
+        }
+
+        let request = WKNetworkRequest(url: url, method: .GET, parameters: parameters)
+
+        networkService.performDecodableGET(request: request) { (result: Result<UndoRevisionSummaryTextResponse, Error>) in
+            switch result {
+            case .success(let response):
+                
+                guard let undoSummaryMessage = response.query.messages.first(where: { message in
+                    message.name == "undo-summary"
+                }) else {
+                    completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                    return
+                }
+                
+                completion(.success(undoSummaryMessage.content))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
     }
 }

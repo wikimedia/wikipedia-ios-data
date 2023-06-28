@@ -195,4 +195,22 @@ final class WKWatchlistServiceTests: XCTestCase {
             return XCTFail("Unexpected result")
         }
     }
+    
+    func testPostUndoArticle() {
+        let service = WKWatchlistService()
+        
+        let expectation = XCTestExpectation(description: "Post Undo Article")
+
+        var resultToTest: Result<Void, Error>?
+        service.undo(title: "Cat", revisionID: 1155871225, summary: "Testing", username: "Amigao", project: enProject) { result in
+            resultToTest = result
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 10.0)
+
+        guard case .success(_) = resultToTest else {
+            return XCTFail("Unexpected result")
+        }
+    }
 }
