@@ -256,7 +256,7 @@ public class WKWatchlistService {
 
                  completion(.success(()))
              case .failure(let error):
-                 print(error)
+                 completion(.failure(error))
              }
          }
      }
@@ -297,7 +297,7 @@ public class WKWatchlistService {
 
                  completion(.success(()))
              case .failure(let error):
-                 print(error)
+                 completion(.failure(error))
              }
          }
      }
@@ -385,7 +385,7 @@ public class WKWatchlistService {
 
                 completion(.success(()))
             case .failure(let error):
-                print(error)
+                completion(.failure(error))
             }
         }
     }
@@ -431,7 +431,7 @@ public class WKWatchlistService {
 
                         completion(.success(()))
                     case .failure(let error):
-                        print(error)
+                        completion(.failure(error))
                     }
                 }
                 
