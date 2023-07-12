@@ -31,6 +31,11 @@ public struct WKPageWatchStatus {
     public let userHasRollbackRights: Bool?
 }
 
+public struct WKUndoOrRollbackResult: Codable {
+    public let newRevisionID: Int
+    public let oldRevisionID: Int
+}
+
 fileprivate struct WatchlistAPIResponse: Codable {
     
     struct Query: Codable {
@@ -352,7 +357,7 @@ public class WKWatchlistService {
     
     // MARK: POST Rollback Page
     
-    public func rollback(title: String, project: WKProject, username: String, completion: @escaping (Result<Void, Error>) -> Void) {
+    public func rollback(title: String, project: WKProject, username: String, completion: @escaping (Result<WKUndoOrRollbackResult, Error>) -> Void) {
         
         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
             completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
@@ -378,12 +383,14 @@ public class WKWatchlistService {
         networkService.perform(request: request, tokenType: .rollback) { result in
             switch result {
             case .success(let response):
-                guard let _ = (response?["rollback"] as? [String: Any])?["summary"] as? String else {
+                guard let rollback = (response?["rollback"] as? [String: Any]),
+                    let newRevisionID = rollback["revid"] as? Int,
+                    let oldRevisionID = rollback["old_revid"] as? Int else {
                     completion(.failure(WKWatchlistServiceError.unexpectedResponse))
                     return
                 }
 
-                completion(.success(()))
+                completion(.success(WKUndoOrRollbackResult(newRevisionID: newRevisionID, oldRevisionID: oldRevisionID)))
             case .failure(let error):
                 completion(.failure(error))
             }
@@ -392,7 +399,7 @@ public class WKWatchlistService {
     
     // MARK: POST Undo Revision
     
-    public func undo(title: String, revisionID: UInt, summary: String, username: String, project: WKProject, completion: @escaping (Result<Void, Error>) -> Void) {
+    public func undo(title: String, revisionID: UInt, summary: String, username: String, project: WKProject, completion: @escaping (Result<WKUndoOrRollbackResult, Error>) -> Void) {
 
         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
             completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
@@ -423,13 +430,16 @@ public class WKWatchlistService {
                 networkService.perform(request: request, tokenType: .csrf) { result in
                     switch result {
                     case .success(let response):
-                        guard let result = (response?["edit"] as? [String: Any])?["result"] as? String,
-                              result == "Success" else {
+                        guard let edit = (response?["edit"] as? [String: Any]),
+                              let result = edit["result"] as? String,
+                              result == "Success",
+                              let newRevisionID = edit["newrevid"] as? Int,
+                              let oldRevisionID = edit["oldrevid"] as? Int else {
                             completion(.failure(WKWatchlistServiceError.unexpectedResponse))
                             return
                         }
 
-                        completion(.success(()))
+                        completion(.success(WKUndoOrRollbackResult(newRevisionID: newRevisionID, oldRevisionID: oldRevisionID)))
                     case .failure(let error):
                         completion(.failure(error))
                     }

@@ -183,7 +183,7 @@ final class WKWatchlistServiceTests: XCTestCase {
 
         let expectation = XCTestExpectation(description: "Post Rollback Article")
 
-        var resultToTest: Result<Void, Error>?
+        var resultToTest: Result<WKUndoOrRollbackResult, Error>?
         service.rollback(title: "Cat", project: enProject, username: "Amigao") { result in
             resultToTest = result
             expectation.fulfill()
@@ -191,7 +191,15 @@ final class WKWatchlistServiceTests: XCTestCase {
 
         wait(for: [expectation], timeout: 10.0)
 
-        guard case .success(_) = resultToTest else {
+        guard let resultToTest else {
+            return XCTFail("Unexpected result")
+        }
+        
+        switch resultToTest {
+        case .success(let result):
+            XCTAssertEqual(result.newRevisionID, 573955)
+            XCTAssertEqual(result.oldRevisionID, 573953)
+        case .failure:
             return XCTFail("Unexpected result")
         }
     }
@@ -201,15 +209,23 @@ final class WKWatchlistServiceTests: XCTestCase {
         
         let expectation = XCTestExpectation(description: "Post Undo Article")
 
-        var resultToTest: Result<Void, Error>?
+        var resultToTest: Result<WKUndoOrRollbackResult, Error>?
         service.undo(title: "Cat", revisionID: 1155871225, summary: "Testing", username: "Amigao", project: enProject) { result in
             resultToTest = result
             expectation.fulfill()
         }
 
         wait(for: [expectation], timeout: 10.0)
-
-        guard case .success(_) = resultToTest else {
+        
+        guard let resultToTest else {
+            return XCTFail("Unexpected result")
+        }
+        
+        switch resultToTest {
+        case .success(let result):
+            XCTAssertEqual(result.newRevisionID, 573989)
+            XCTAssertEqual(result.oldRevisionID, 573988)
+        case .failure:
             return XCTFail("Unexpected result")
         }
     }
