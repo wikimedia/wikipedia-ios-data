@@ -41,7 +41,7 @@ final class WKWatchlistServiceTests: XCTestCase {
             return
         }
         
-        XCTAssertEqual(watchlistToTest.items.count, 51, "Incorrect number of watchlist items returned")
+        XCTAssertEqual(watchlistToTest.items.count, 82, "Incorrect number of watchlist items returned")
         
         let enItems = watchlistToTest.items.filter { $0.project == enProject }
         let esItems = watchlistToTest.items.filter { $0.project == esProject }
