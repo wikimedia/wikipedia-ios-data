@@ -11,7 +11,10 @@ public struct WKWatchlist {
         public let isAnon: Bool
         public let isBot: Bool
         public let timestamp: Date
+        public let commentWikitext: String
         public let commentHtml: String
+        public let byteLength: UInt
+        public let oldByteLength: UInt
         public let project: WKProject
     }
     
@@ -48,7 +51,10 @@ fileprivate struct WatchlistAPIResponse: Codable {
             let isAnon: Bool
             let isBot: Bool
             let timestampString: String
+            let commentWikitext: String
             let commentHtml: String
+            let byteLength: UInt
+            let oldByteLength: UInt
             
             enum CodingKeys: String, CodingKey {
                 case title
@@ -58,7 +64,10 @@ fileprivate struct WatchlistAPIResponse: Codable {
                 case isAnon = "anon"
                 case isBot = "bot"
                 case timestampString = "timestamp"
+                case commentWikitext = "comment"
                 case commentHtml = "parsedcomment"
+                case byteLength = "newlen"
+                case oldByteLength = "oldlen"
             }
         }
         
@@ -218,7 +227,19 @@ public class WKWatchlistService {
                 continue
             }
             
-            let item = WKWatchlist.Item(title: item.title, revisionID: item.revisionID, oldRevisionID: item.oldRevisionID, username: item.username, isAnon: item.isAnon, isBot: item.isBot, timestamp: timestamp, commentHtml: item.commentHtml, project: project)
+            let item = WKWatchlist.Item(
+                title: item.title,
+                revisionID: item.revisionID,
+                oldRevisionID: item.oldRevisionID,
+                username: item.username,
+                isAnon: item.isAnon,
+                isBot: item.isBot,
+                timestamp: timestamp,
+                commentWikitext: item.commentWikitext,
+                commentHtml: item.commentHtml,
+                byteLength: item.byteLength,
+                oldByteLength: item.oldByteLength,
+                project: project)
             items.append(item)
         }
         

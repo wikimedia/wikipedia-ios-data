@@ -56,7 +56,10 @@ final class WKWatchlistServiceTests: XCTestCase {
         XCTAssertEqual(first.oldRevisionID, 1157699360, "Unexpected watchlist item oldRevisionID property")
         XCTAssertEqual(first.isAnon, false, "Unexpected watchlist item isAnon property")
         XCTAssertEqual(first.isBot, false, "Unexpected watchlist item isBot property")
+        XCTAssertEqual(first.commentWikitext, "/* I disagree with the above comment */ Reply", "Unexpected watchlist item commentWikitext property")
         XCTAssertEqual(first.commentHtml, "<span dir=\"auto\"><span class=\"autocomment\"><a href=\"/wiki/Talk:Cat#I_disagree_with_the_above_comment\" title=\"Talk:Cat\">→‎I disagree with the above comment</a>: </span> Reply</span>", "Unexpected watchlist item commentHtml property")
+        XCTAssertEqual(first.byteLength, 4246, "Unexpected watchlist item byteLength property")
+        XCTAssertEqual(first.oldByteLength, 4071, "Unexpected watchlist item oldByteLength property")
         XCTAssertEqual(first.project, WKProject.wikipedia(WKLanguage(languageCode: "en", languageVariantCode: nil)))
         
         var dateComponents = DateComponents()
