@@ -10,7 +10,7 @@ public class WKWatchlistDataController {
     public func fetchWatchlist(completion: @escaping (Result<WKWatchlist, Error>) -> Void) {
         
         guard let service = WKDataEnvironment.current.mediaWikiService else {
-            completion(.failure(WKDataControllerError.mediawikiServiceUnavailable))
+            completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
             return
         }
         
@@ -38,7 +38,10 @@ public class WKWatchlistDataController {
         
         let group = DispatchGroup()
         var items: [WKWatchlist.Item] = []
-        var errors: [Error] = []
+        var errors: [WKProject: [WKDataControllerError]] = [:]
+        projects.forEach { project in
+            errors[project] = []
+        }
         
         for project in projects {
             
@@ -65,27 +68,36 @@ public class WKWatchlistDataController {
                     
                     if let apiResponseErrors = apiResponse.errors,
                        !apiResponseErrors.isEmpty {
-                        let mediaWikiResponseErrirs = apiResponseErrors.map { WKDataControllerError.mediaWikiResponseError($0) }
-                        errors.append(contentsOf: mediaWikiResponseErrirs)
+                        
+                        let mediaWikiResponseErrors = apiResponseErrors.map { WKDataControllerError.mediaWikiResponseError($0) }
+                        errors[project, default: []].append(contentsOf: mediaWikiResponseErrors)
                         return
                     }
                     
                     guard let query = apiResponse.query else {
-                        errors.append(WKDataControllerError.unexpectedResponse)
+                        errors[project, default: []].append(WKDataControllerError.unexpectedResponse)
                         return
                     }
                     
                     items.append(contentsOf: self.watchlistItems(from: query, project: project))
                     
                 case .failure(let error):
-                    errors.append(WKDataControllerError.serviceError(error))
+                    errors[project, default: []].append(WKDataControllerError.serviceError(error))
                 }
             }
         }
         
         group.notify(queue: .main) {
         
-            if let error = errors.first {
+            let successProjects = errors.filter { $0.value.isEmpty }
+            let failureProjects = errors.filter { !$0.value.isEmpty }
+            
+            if !successProjects.isEmpty {
+                completion(.success(WKWatchlist(items: items)))
+                return
+            }
+            
+            if let error = failureProjects.first?.value.first {
                 completion(.failure(error))
                 return
             }
@@ -127,7 +139,7 @@ public class WKWatchlistDataController {
      public func watch(title: String, project: WKProject, expiry: WKWatchlistExpiryType, completion: @escaping (Result<Void, Error>) -> Void) {
 
          guard let service = WKDataEnvironment.current.mediaWikiService else {
-             completion(.failure(WKDataControllerError.mediawikiServiceUnavailable))
+             completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
              return
          }
 
@@ -142,7 +154,7 @@ public class WKWatchlistDataController {
          ]
 
          guard let url = URL.mediaWikiAPIURL(project: project) else {
-             completion(.failure(WKDataControllerError.unabletoDetermineProject))
+             completion(.failure(WKDataControllerError.failureCreatingRequestURL))
              return
          }
 
@@ -168,7 +180,7 @@ public class WKWatchlistDataController {
      public func unwatch(title: String, project: WKProject, completion: @escaping (Result<Void, Error>) -> Void) {
 
          guard let service = WKDataEnvironment.current.mediaWikiService else {
-             completion(.failure(WKDataControllerError.mediawikiServiceUnavailable))
+             completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
              return
          }
 
@@ -183,7 +195,7 @@ public class WKWatchlistDataController {
          ]
 
          guard let url = URL.mediaWikiAPIURL(project: project) else {
-             completion(.failure(WKDataControllerError.unabletoDetermineProject))
+             completion(.failure(WKDataControllerError.failureCreatingRequestURL))
              return
          }
 
@@ -208,7 +220,7 @@ public class WKWatchlistDataController {
      
      public func fetchWatchStatus(title: String, project: WKProject, needsRollbackRights: Bool = false, completion: @escaping (Result<WKPageWatchStatus, Error>) -> Void) {
          guard let service = WKDataEnvironment.current.mediaWikiService else {
-             completion(.failure(WKDataControllerError.mediawikiServiceUnavailable))
+             completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
              return
          }
 
@@ -257,7 +269,7 @@ public class WKWatchlistDataController {
     public func rollback(title: String, project: WKProject, username: String, completion: @escaping (Result<WKUndoOrRollbackResult, Error>) -> Void) {
         
         guard let service = WKDataEnvironment.current.mediaWikiService else {
-            completion(.failure(WKDataControllerError.mediawikiServiceUnavailable))
+            completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
             return
         }
 
@@ -272,7 +284,7 @@ public class WKWatchlistDataController {
         ]
 
         guard let url = URL.mediaWikiAPIURL(project: project) else {
-            completion(.failure(WKDataControllerError.unabletoDetermineProject))
+            completion(.failure(WKDataControllerError.failureCreatingRequestURL))
             return
         }
 
@@ -299,7 +311,7 @@ public class WKWatchlistDataController {
     public func undo(title: String, revisionID: UInt, summary: String, username: String, project: WKProject, completion: @escaping (Result<WKUndoOrRollbackResult, Error>) -> Void) {
 
         guard let service = WKDataEnvironment.current.mediaWikiService else {
-            completion(.failure(WKDataControllerError.mediawikiServiceUnavailable))
+            completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
             return
         }
         
@@ -319,7 +331,7 @@ public class WKWatchlistDataController {
                 ]
 
                 guard let url = URL.mediaWikiAPIURL(project: project) else {
-                    completion(.failure(WKDataControllerError.unabletoDetermineProject))
+                    completion(.failure(WKDataControllerError.failureCreatingRequestURL))
                     return
                 }
 
@@ -351,7 +363,7 @@ public class WKWatchlistDataController {
     private func fetchUndoRevisionSummaryPrefixText(revisionID: UInt, username: String, project: WKProject, completion: @escaping (Result<String, Error>) -> Void) {
         
         guard let service = WKDataEnvironment.current.mediaWikiService else {
-            completion(.failure(WKDataControllerError.mediawikiServiceUnavailable))
+            completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
             return
         }
 

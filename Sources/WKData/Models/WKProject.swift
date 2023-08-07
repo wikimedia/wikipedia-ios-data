@@ -1,6 +1,6 @@
 import Foundation
 
-public enum WKProject: Equatable {
+public enum WKProject: Equatable, Hashable {
     public static func == (lhs: WKProject, rhs: WKProject) -> Bool {
         switch lhs {
         case .wikipedia(let lhsLanguage):
@@ -24,6 +24,19 @@ public enum WKProject: Equatable {
             default:
                 return false
             }
+        }
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        switch self {
+        case .wikipedia(let language):
+            hasher.combine("wikipedia")
+            hasher.combine(language.languageCode)
+            hasher.combine(language.languageVariantCode)
+        case .wikidata:
+            hasher.combine("wikidata")
+        case .commons:
+            hasher.combine("commons")
         }
     }
     
