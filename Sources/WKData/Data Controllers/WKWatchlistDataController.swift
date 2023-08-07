@@ -1,126 +1,7 @@
 import Foundation
 import UIKit
 
-public struct WKWatchlist {
-    
-    public struct Item {
-        public let title: String
-        public let revisionID: UInt
-        public let oldRevisionID: UInt
-        public let username: String
-        public let isAnon: Bool
-        public let isBot: Bool
-        public let timestamp: Date
-        public let commentWikitext: String
-        public let commentHtml: String
-        public let byteLength: UInt
-        public let oldByteLength: UInt
-        public let project: WKProject
-    }
-    
-    public let items: [Item]
-}
-
-public enum WKWatchlistExpiryType: String {
-    case never
-    case oneWeek = "1 week"
-    case oneMonth = "1 month"
-    case threeMonths = "3 months"
-    case sixMonths = "6 months"
-}
-
-public struct WKPageWatchStatus {
-    public let watched: Bool
-    public let userHasRollbackRights: Bool?
-}
-
-public struct WKUndoOrRollbackResult: Codable {
-    public let newRevisionID: Int
-    public let oldRevisionID: Int
-}
-
-fileprivate struct WatchlistAPIResponse: Codable {
-    
-    struct Query: Codable {
-        
-        struct Item: Codable {
-            let title: String
-            let revisionID: UInt
-            let oldRevisionID: UInt
-            let username: String
-            let isAnon: Bool
-            let isBot: Bool
-            let timestampString: String
-            let commentWikitext: String
-            let commentHtml: String
-            let byteLength: UInt
-            let oldByteLength: UInt
-            
-            enum CodingKeys: String, CodingKey {
-                case title
-                case revisionID = "revid"
-                case oldRevisionID = "old_revid"
-                case username = "user"
-                case isAnon = "anon"
-                case isBot = "bot"
-                case timestampString = "timestamp"
-                case commentWikitext = "comment"
-                case commentHtml = "parsedcomment"
-                case byteLength = "newlen"
-                case oldByteLength = "oldlen"
-            }
-        }
-        
-        let watchlist: [Item]
-    }
-    
-    let query: Query?
-    let errors: [WKMediaWikiError]?
-}
-
-fileprivate struct PageWatchStatusAndRollbackResponse: Codable {
-
-    struct Query: Codable {
-
-        struct Page: Codable {
-            let title: String
-            let watched: Bool
-        }
-
-        struct UserInfo: Codable {
-            let name: String
-            let rights: [String]
-        }
-
-        let pages: [Page]
-        let userinfo: UserInfo?
-    }
-
-    let query: Query
-}
-
-fileprivate struct UndoRevisionSummaryTextResponse: Codable {
-    
-    struct Query: Codable {
-        
-        struct Messages: Codable {
-            let name: String
-            let content: String
-        }
-        
-        let messages: [Messages]
-        
-        enum CodingKeys: String, CodingKey {
-            case messages = "allmessages"
-        }
-    }
-    
-    let query: Query
-}
-
 public class WKWatchlistDataController {
-
-
 
     public init() { }
     
@@ -508,5 +389,88 @@ public class WKWatchlistDataController {
                 completion(.failure(WKCommonError.serviceError(error)))
             }
         }
+    }
+}
+
+// MARK: - Private Models
+
+private extension WKWatchlistDataController {
+    struct WatchlistAPIResponse: Codable {
+        
+        struct Query: Codable {
+            
+            struct Item: Codable {
+                let title: String
+                let revisionID: UInt
+                let oldRevisionID: UInt
+                let username: String
+                let isAnon: Bool
+                let isBot: Bool
+                let timestampString: String
+                let commentWikitext: String
+                let commentHtml: String
+                let byteLength: UInt
+                let oldByteLength: UInt
+                
+                enum CodingKeys: String, CodingKey {
+                    case title
+                    case revisionID = "revid"
+                    case oldRevisionID = "old_revid"
+                    case username = "user"
+                    case isAnon = "anon"
+                    case isBot = "bot"
+                    case timestampString = "timestamp"
+                    case commentWikitext = "comment"
+                    case commentHtml = "parsedcomment"
+                    case byteLength = "newlen"
+                    case oldByteLength = "oldlen"
+                }
+            }
+            
+            let watchlist: [Item]
+        }
+        
+        let query: Query?
+        let errors: [WKMediaWikiError]?
+    }
+
+    struct PageWatchStatusAndRollbackResponse: Codable {
+
+        struct Query: Codable {
+
+            struct Page: Codable {
+                let title: String
+                let watched: Bool
+            }
+
+            struct UserInfo: Codable {
+                let name: String
+                let rights: [String]
+            }
+
+            let pages: [Page]
+            let userinfo: UserInfo?
+        }
+
+        let query: Query
+    }
+
+    struct UndoRevisionSummaryTextResponse: Codable {
+        
+        struct Query: Codable {
+            
+            struct Messages: Codable {
+                let name: String
+                let content: String
+            }
+            
+            let messages: [Messages]
+            
+            enum CodingKeys: String, CodingKey {
+                case messages = "allmessages"
+            }
+        }
+        
+        let query: Query
     }
 }
