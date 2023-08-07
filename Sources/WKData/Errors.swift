@@ -1,6 +1,6 @@
 import Foundation
 
-public enum WKCommonError: Error {
+public enum WKDataControllerError: Error {
     case mediawikiServiceUnavailable
     case unabletoDetermineProject
     case appLanguagesUnavailable
