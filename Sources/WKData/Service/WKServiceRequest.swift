@@ -1,6 +1,6 @@
 import Foundation
 
-public struct WKNetworkRequest {
+public struct WKServiceRequest {
     public enum TokenType {
         case csrf
         case watch
@@ -20,7 +20,7 @@ public struct WKNetworkRequest {
     public let tokenType: TokenType?
 	public let parameters: [String: Any]?
 
-    internal init(url: URL? = nil, method: WKNetworkRequest.Method, tokenType: WKNetworkRequest.TokenType? = nil, parameters: [String : Any]? = nil) {
+    internal init(url: URL? = nil, method: WKServiceRequest.Method, tokenType: WKServiceRequest.TokenType? = nil, parameters: [String : Any]? = nil) {
         self.url = url
         self.method = method
         self.tokenType = tokenType

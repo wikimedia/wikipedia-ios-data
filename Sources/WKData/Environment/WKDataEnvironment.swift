@@ -13,5 +13,5 @@ public final class WKDataEnvironment: ObservableObject {
 	public static let current = WKDataEnvironment()
 
     @Published public var appData = WKAppData(appLanguages: [])
-    @Published public var mediaWikiNetworkService: WKNetworkService?
+    @Published public var mediaWikiService: WKService?
 }

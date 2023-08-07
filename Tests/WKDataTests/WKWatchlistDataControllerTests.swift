@@ -2,7 +2,7 @@ import XCTest
 @testable import WKData
 @testable import WKDataMocks
 
-final class WKWatchlistServiceTests: XCTestCase {
+final class WKWatchlistDataControllerTests: XCTestCase {
     
     private let enProject = WKProject.wikipedia(WKLanguage(languageCode: "en", languageVariantCode: nil))
     private let esProject = WKProject.wikipedia(WKLanguage(languageCode: "es", languageVariantCode: nil))
@@ -12,16 +12,16 @@ final class WKWatchlistServiceTests: XCTestCase {
             WKLanguage(languageCode: "en", languageVariantCode: nil),
             WKLanguage(languageCode: "es", languageVariantCode: nil)
         ])
-        WKDataEnvironment.current.mediaWikiNetworkService = WKMockWatchlistMediaWikiNetworkService()
+        WKDataEnvironment.current.mediaWikiService = WKMockWatchlistMediaWikiService()
     }
     
     func testFetchWatchlist() {
-        let service = WKWatchlistService()
+        let controller = WKWatchlistDataController()
         
         let expectation = XCTestExpectation(description: "Fetch Watchlist")
         
         var watchlistToTest: WKWatchlist?
-        service.fetchWatchlist { result in
+        controller.fetchWatchlist { result in
             switch result {
             case .success(let watchlist):
                 
@@ -80,12 +80,12 @@ final class WKWatchlistServiceTests: XCTestCase {
     }
     
     func testPostWatchArticleExpiryNever() {
-         let service = WKWatchlistService()
+         let controller = WKWatchlistDataController()
 
          let expectation = XCTestExpectation(description: "Post Watch Article Expiry Never")
 
          var resultToTest: Result<Void, Error>?
-        service.watch(title: "Cat", project: enProject, expiry: .never) { result in
+        controller.watch(title: "Cat", project: enProject, expiry: .never) { result in
              resultToTest = result
              expectation.fulfill()
          }
@@ -98,12 +98,12 @@ final class WKWatchlistServiceTests: XCTestCase {
      }
 
      func testPostWatchArticleExpiryDate() {
-         let service = WKWatchlistService()
+         let controller = WKWatchlistDataController()
 
          let expectation = XCTestExpectation(description: "Post Watch Article Expiry Date")
 
          var resultToTest: Result<Void, Error>?
-         service.watch(title: "Cat", project: enProject, expiry: .oneMonth) { result in
+         controller.watch(title: "Cat", project: enProject, expiry: .oneMonth) { result in
              resultToTest = result
              expectation.fulfill()
          }
@@ -116,12 +116,12 @@ final class WKWatchlistServiceTests: XCTestCase {
      }
 
      func testPostUnwatchArticle() {
-         let service = WKWatchlistService()
+         let controller = WKWatchlistDataController()
 
          let expectation = XCTestExpectation(description: "Post Watch Unwatch Article")
 
          var resultToTest: Result<Void, Error>?
-         service.unwatch(title: "Cat", project: enProject) { result in
+         controller.unwatch(title: "Cat", project: enProject) { result in
              resultToTest = result
              expectation.fulfill()
          }
@@ -134,11 +134,11 @@ final class WKWatchlistServiceTests: XCTestCase {
      }
     
     func testFetchWatchStatus() {
-         let service = WKWatchlistService()
+         let controller = WKWatchlistDataController()
 
          let expectation = XCTestExpectation(description: "Fetch Watch Status")
          var statusToTest: WKPageWatchStatus?
-        service.fetchWatchStatus(title: "Cat", project: enProject) { result in
+        controller.fetchWatchStatus(title: "Cat", project: enProject) { result in
              switch result {
              case .success(let status):
                  statusToTest = status
@@ -158,11 +158,11 @@ final class WKWatchlistServiceTests: XCTestCase {
      }
 
      func testFetchWatchStatusWithRollbackRights() {
-         let service = WKWatchlistService()
+         let controller = WKWatchlistDataController()
 
          let expectation = XCTestExpectation(description: "Fetch Watch Status")
          var statusToTest: WKPageWatchStatus?
-         service.fetchWatchStatus(title: "Cat", project: enProject, needsRollbackRights: true) { result in
+         controller.fetchWatchStatus(title: "Cat", project: enProject, needsRollbackRights: true) { result in
              switch result {
              case .success(let status):
                  statusToTest = status
@@ -182,12 +182,12 @@ final class WKWatchlistServiceTests: XCTestCase {
      }
     
     func testPostRollbackArticle() {
-        let service = WKWatchlistService()
+        let controller = WKWatchlistDataController()
 
         let expectation = XCTestExpectation(description: "Post Rollback Article")
 
         var resultToTest: Result<WKUndoOrRollbackResult, Error>?
-        service.rollback(title: "Cat", project: enProject, username: "Amigao") { result in
+        controller.rollback(title: "Cat", project: enProject, username: "Amigao") { result in
             resultToTest = result
             expectation.fulfill()
         }
@@ -208,12 +208,12 @@ final class WKWatchlistServiceTests: XCTestCase {
     }
     
     func testPostUndoArticle() {
-        let service = WKWatchlistService()
+        let controller = WKWatchlistDataController()
         
         let expectation = XCTestExpectation(description: "Post Undo Article")
 
         var resultToTest: Result<WKUndoOrRollbackResult, Error>?
-        service.undo(title: "Cat", revisionID: 1155871225, summary: "Testing", username: "Amigao", project: enProject) { result in
+        controller.undo(title: "Cat", revisionID: 1155871225, summary: "Testing", username: "Amigao", project: enProject) { result in
             resultToTest = result
             expectation.fulfill()
         }

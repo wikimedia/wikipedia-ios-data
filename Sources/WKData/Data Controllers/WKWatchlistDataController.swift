@@ -118,9 +118,9 @@ fileprivate struct UndoRevisionSummaryTextResponse: Codable {
     let query: Query
 }
 
-public class WKWatchlistService {
+public class WKWatchlistDataController {
 
-    public enum WKWatchlistServiceError: Error {
+    public enum WKWatchlistError: Error {
         case unexpectedResponse
         case networkFailure(Error)
         case mediawikiServiceUnavailable
@@ -134,14 +134,14 @@ public class WKWatchlistService {
 
     public func fetchWatchlist(completion: @escaping (Result<WKWatchlist, Error>) -> Void) {
         
-        guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-            completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+        guard let service = WKDataEnvironment.current.mediaWikiService else {
+            completion(.failure(WKWatchlistError.mediawikiServiceUnavailable))
             return
         }
         
         let appLanguages = WKDataEnvironment.current.appData.appLanguages
         guard !appLanguages.isEmpty else {
-            completion(.failure(WKWatchlistServiceError.appLanguagesUnavailable))
+            completion(.failure(WKWatchlistError.appLanguagesUnavailable))
             return
         }
         
@@ -174,8 +174,8 @@ public class WKWatchlistService {
             parameters["variant"] = project.languageVariantCode
             
             group.enter()
-            let request = WKNetworkRequest(url: url, method: .GET, parameters: parameters)
-            networkService.performDecodableGET(request: request) { [weak self] (result: Result<WatchlistAPIResponse, Error>) in
+            let request = WKServiceRequest(url: url, method: .GET, parameters: parameters)
+            service.performDecodableGET(request: request) { [weak self] (result: Result<WatchlistAPIResponse, Error>) in
                 
                 guard let self else {
                     return
@@ -195,7 +195,7 @@ public class WKWatchlistService {
                     }
                     
                     guard let query = apiResponse.query else {
-                        errors.append(WKWatchlistServiceError.unexpectedResponse)
+                        errors.append(WKWatchlistError.unexpectedResponse)
                         return
                     }
                     
@@ -250,8 +250,8 @@ public class WKWatchlistService {
      
      public func watch(title: String, project: WKProject, expiry: WKWatchlistExpiryType, completion: @escaping (Result<Void, Error>) -> Void) {
 
-         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-             completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+         guard let service = WKDataEnvironment.current.mediaWikiService else {
+             completion(.failure(WKWatchlistError.mediawikiServiceUnavailable))
              return
          }
 
@@ -266,17 +266,17 @@ public class WKWatchlistService {
          ]
 
          guard let url = URL.mediaWikiAPIURL(project: project) else {
-             completion(.failure(WKWatchlistServiceError.unabletoDetermineProject))
+             completion(.failure(WKWatchlistError.unabletoDetermineProject))
              return
          }
 
-         let request = WKNetworkRequest(url: url, method: .POST, parameters: parameters)
-         networkService.perform(request: request, tokenType: .watch) { result in
+         let request = WKServiceRequest(url: url, method: .POST, parameters: parameters)
+         service.perform(request: request, tokenType: .watch) { result in
              switch result {
              case .success(let response):
                  guard let watched = (response?["watch"] as? [[String: Any]])?.first?["watched"] as? Bool,
                  watched == true else {
-                     completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                     completion(.failure(WKWatchlistError.unexpectedResponse))
                      return
                  }
 
@@ -291,8 +291,8 @@ public class WKWatchlistService {
      
      public func unwatch(title: String, project: WKProject, completion: @escaping (Result<Void, Error>) -> Void) {
 
-         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-             completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+         guard let service = WKDataEnvironment.current.mediaWikiService else {
+             completion(.failure(WKWatchlistError.mediawikiServiceUnavailable))
              return
          }
 
@@ -307,17 +307,17 @@ public class WKWatchlistService {
          ]
 
          guard let url = URL.mediaWikiAPIURL(project: project) else {
-             completion(.failure(WKWatchlistServiceError.unabletoDetermineProject))
+             completion(.failure(WKWatchlistError.unabletoDetermineProject))
              return
          }
 
-         let request = WKNetworkRequest(url: url, method: .POST, parameters: parameters)
-         networkService.perform(request: request, tokenType: .watch) { result in
+         let request = WKServiceRequest(url: url, method: .POST, parameters: parameters)
+         service.perform(request: request, tokenType: .watch) { result in
              switch result {
              case .success(let response):
                  guard let unwatched = (response?["watch"] as? [[String: Any]])?.first?["unwatched"] as? Bool,
                        unwatched == true else {
-                     completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                     completion(.failure(WKWatchlistError.unexpectedResponse))
                      return
                  }
 
@@ -331,8 +331,8 @@ public class WKWatchlistService {
     // MARK: GET Watch Status and Rollback Rights
      
      public func fetchWatchStatus(title: String, project: WKProject, needsRollbackRights: Bool = false, completion: @escaping (Result<WKPageWatchStatus, Error>) -> Void) {
-         guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-             completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+         guard let service = WKDataEnvironment.current.mediaWikiService else {
+             completion(.failure(WKWatchlistError.mediawikiServiceUnavailable))
              return
          }
 
@@ -356,14 +356,14 @@ public class WKWatchlistService {
              return
          }
 
-         let request = WKNetworkRequest(url: url, method: .GET, parameters: parameters)
+         let request = WKServiceRequest(url: url, method: .GET, parameters: parameters)
 
-         networkService.performDecodableGET(request: request) { (result: Result<PageWatchStatusAndRollbackResponse, Error>) in
+         service.performDecodableGET(request: request) { (result: Result<PageWatchStatusAndRollbackResponse, Error>) in
              switch result {
              case .success(let response):
 
                  guard let watched = response.query.pages.first?.watched else {
-                     completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                     completion(.failure(WKWatchlistError.unexpectedResponse))
                      return
                  }
 
@@ -380,8 +380,8 @@ public class WKWatchlistService {
     
     public func rollback(title: String, project: WKProject, username: String, completion: @escaping (Result<WKUndoOrRollbackResult, Error>) -> Void) {
         
-        guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-            completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+        guard let service = WKDataEnvironment.current.mediaWikiService else {
+            completion(.failure(WKWatchlistError.mediawikiServiceUnavailable))
             return
         }
 
@@ -396,18 +396,18 @@ public class WKWatchlistService {
         ]
 
         guard let url = URL.mediaWikiAPIURL(project: project) else {
-            completion(.failure(WKWatchlistServiceError.unabletoDetermineProject))
+            completion(.failure(WKWatchlistError.unabletoDetermineProject))
             return
         }
 
-        let request = WKNetworkRequest(url: url, method: .POST, parameters: parameters)
-        networkService.perform(request: request, tokenType: .rollback) { result in
+        let request = WKServiceRequest(url: url, method: .POST, parameters: parameters)
+        service.perform(request: request, tokenType: .rollback) { result in
             switch result {
             case .success(let response):
                 guard let rollback = (response?["rollback"] as? [String: Any]),
                     let newRevisionID = rollback["revid"] as? Int,
                     let oldRevisionID = rollback["old_revid"] as? Int else {
-                    completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                    completion(.failure(WKWatchlistError.unexpectedResponse))
                     return
                 }
 
@@ -422,8 +422,8 @@ public class WKWatchlistService {
     
     public func undo(title: String, revisionID: UInt, summary: String, username: String, project: WKProject, completion: @escaping (Result<WKUndoOrRollbackResult, Error>) -> Void) {
 
-        guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-            completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+        guard let service = WKDataEnvironment.current.mediaWikiService else {
+            completion(.failure(WKWatchlistError.mediawikiServiceUnavailable))
             return
         }
         
@@ -443,12 +443,12 @@ public class WKWatchlistService {
                 ]
 
                 guard let url = URL.mediaWikiAPIURL(project: project) else {
-                    completion(.failure(WKWatchlistServiceError.unabletoDetermineProject))
+                    completion(.failure(WKWatchlistError.unabletoDetermineProject))
                     return
                 }
 
-                let request = WKNetworkRequest(url: url, method: .POST, parameters: parameters)
-                networkService.perform(request: request, tokenType: .csrf) { result in
+                let request = WKServiceRequest(url: url, method: .POST, parameters: parameters)
+                service.perform(request: request, tokenType: .csrf) { result in
                     switch result {
                     case .success(let response):
                         guard let edit = (response?["edit"] as? [String: Any]),
@@ -456,7 +456,7 @@ public class WKWatchlistService {
                               result == "Success",
                               let newRevisionID = edit["newrevid"] as? Int,
                               let oldRevisionID = edit["oldrevid"] as? Int else {
-                            completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                            completion(.failure(WKWatchlistError.unexpectedResponse))
                             return
                         }
 
@@ -474,8 +474,8 @@ public class WKWatchlistService {
     
     private func fetchUndoRevisionSummaryPrefixText(revisionID: UInt, username: String, project: WKProject, completion: @escaping (Result<String, Error>) -> Void) {
         
-        guard let networkService = WKDataEnvironment.current.mediaWikiNetworkService else {
-            completion(.failure(WKWatchlistServiceError.mediawikiServiceUnavailable))
+        guard let service = WKDataEnvironment.current.mediaWikiService else {
+            completion(.failure(WKWatchlistError.mediawikiServiceUnavailable))
             return
         }
 
@@ -495,16 +495,16 @@ public class WKWatchlistService {
             return
         }
 
-        let request = WKNetworkRequest(url: url, method: .GET, parameters: parameters)
+        let request = WKServiceRequest(url: url, method: .GET, parameters: parameters)
 
-        networkService.performDecodableGET(request: request) { (result: Result<UndoRevisionSummaryTextResponse, Error>) in
+        service.performDecodableGET(request: request) { (result: Result<UndoRevisionSummaryTextResponse, Error>) in
             switch result {
             case .success(let response):
                 
                 guard let undoSummaryMessage = response.query.messages.first(where: { message in
                     message.name == "undo-summary"
                 }) else {
-                    completion(.failure(WKWatchlistServiceError.unexpectedResponse))
+                    completion(.failure(WKWatchlistError.unexpectedResponse))
                     return
                 }
                 

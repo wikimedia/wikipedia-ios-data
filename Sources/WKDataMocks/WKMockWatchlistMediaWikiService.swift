@@ -8,7 +8,7 @@ fileprivate enum WKMockError: Error {
     case unableToDeserialize
 }
 
-fileprivate extension WKData.WKNetworkRequest {
+fileprivate extension WKData.WKServiceRequest {
     var isWatchlistGetList: Bool {
         guard let action = parameters?["action"] as? String,
               let list = parameters?["list"] as? String else {
@@ -110,7 +110,7 @@ fileprivate extension WKData.WKNetworkRequest {
     }
 }
 
-public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
+public class WKMockWatchlistMediaWikiService: WKService {
     
     public var randomizeGetWatchStatusResponse: Bool = false // used in Components Demo app
     
@@ -118,7 +118,7 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
         
     }
     
-    public func perform(request: WKData.WKNetworkRequest, tokenType: WKData.WKNetworkRequest.TokenType?, completion: @escaping (Result<[String : Any]?, Error>) -> Void) {
+    public func perform(request: WKData.WKServiceRequest, tokenType: WKData.WKServiceRequest.TokenType?, completion: @escaping (Result<[String : Any]?, Error>) -> Void) {
         
         guard let jsonData = jsonData(for: request) else {
             completion(.failure(WKMockError.unableToPullData))
@@ -133,7 +133,7 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
         completion(.success(jsonDict))
     }
     
-    public func performDecodableGET<T>(request: WKData.WKNetworkRequest, completion: @escaping (Result<T, Error>) -> Void) where T : Decodable {
+    public func performDecodableGET<T>(request: WKData.WKServiceRequest, completion: @escaping (Result<T, Error>) -> Void) where T : Decodable {
         
         guard let jsonData = jsonData(for: request) else {
             completion(.failure(WKMockError.unableToPullData))
@@ -150,7 +150,7 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
         completion(.success(response))
     }
     
-    private func jsonData(for request: WKData.WKNetworkRequest) -> Data? {
+    private func jsonData(for request: WKData.WKServiceRequest) -> Data? {
         if request.isWatchlistGetList {
             guard let host = request.url?.host,
                   let index = host.firstIndex(of: "."),
