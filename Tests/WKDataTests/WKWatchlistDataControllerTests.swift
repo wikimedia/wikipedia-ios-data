@@ -13,9 +13,62 @@ final class WKWatchlistDataControllerTests: XCTestCase {
             WKLanguage(languageCode: "es", languageVariantCode: nil)
         ])
         WKDataEnvironment.current.mediaWikiService = WKMockWatchlistMediaWikiService()
+        WKDataEnvironment.current.userDefaultsStore = WKMockKeyValueStore()
+        WKDataEnvironment.current.sharedCacheStore = WKMockKeyValueStore()
     }
     
-    func testFetchWatchlist() {
+    func testAllWatchlistProjects() {
+        let controller = WKWatchlistDataController()
+        let allProjects = controller.allWatchlistProjects()
+        XCTAssertEqual([enProject, esProject, .commons, .wikidata], allProjects)
+    }
+    
+    func testSavingAndLoadingFilterSettings() {
+        let controller = WKWatchlistDataController()
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [.wikidata, .commons], latestRevisions: .latestRevision, activity: .seenChanges, automatedContributions: .bot, significance: .minorEdits, userRegistration: .registered, offTypes: [.categoryChanges, .loggedActions])
+        controller.saveFilterSettings(filterSettingsToSave)
+        let loadedFilterSettings = controller.loadFilterSettings()
+        XCTAssertEqual(filterSettingsToSave, loadedFilterSettings)
+    }
+    
+    func testOnOffWatchlistProjects() {
+        let controller = WKWatchlistDataController()
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [.wikidata, .commons], latestRevisions: .all, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [])
+        controller.saveFilterSettings(filterSettingsToSave)
+        XCTAssertEqual(controller.onWatchlistProjects(), [enProject, esProject])
+        XCTAssertEqual(controller.offWatchlistProjects(), [.wikidata, .commons])
+    }
+    
+    func testAllOffChangeTypes() {
+        let controller = WKWatchlistDataController()
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [], latestRevisions: .all, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [.categoryChanges, .pageCreations])
+        controller.saveFilterSettings(filterSettingsToSave)
+        XCTAssertEqual(controller.allChangeTypes(), [.pageEdits, .pageCreations, .categoryChanges, .wikidataEdits, .loggedActions])
+        XCTAssertEqual(controller.offChangeTypes(), [.categoryChanges, .pageCreations])
+    }
+    
+    func testActiveFilterCount1() {
+        let controller = WKWatchlistDataController()
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [.commons, .wikidata], latestRevisions: .notTheLatestRevision, activity: .seenChanges, automatedContributions: .bot, significance: .minorEdits, userRegistration: .registered, offTypes: [])
+        controller.saveFilterSettings(filterSettingsToSave)
+        XCTAssertEqual(controller.activeFilterCount(), 6)
+    }
+    
+    func testActiveFilterCount2() {
+        let controller = WKWatchlistDataController()
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [], latestRevisions: .latestRevision, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [.categoryChanges])
+        controller.saveFilterSettings(filterSettingsToSave)
+        XCTAssertEqual(controller.activeFilterCount(), 2)
+    }
+    
+    func testActiveFilterCount3() {
+        let controller = WKWatchlistDataController()
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [.commons, .wikidata, enProject], latestRevisions: .latestRevision, activity: .unseenChanges, automatedContributions: .human, significance: .nonMinorEdits, userRegistration: .unregistered, offTypes: [.categoryChanges, .loggedActions, .pageCreations, .pageEdits, .wikidataEdits])
+        controller.saveFilterSettings(filterSettingsToSave)
+        XCTAssertEqual(controller.activeFilterCount(), 13)
+    }
+    
+    func testFetchWatchlistWithDefaultFilter() {
         let controller = WKWatchlistDataController()
         
         let expectation = XCTestExpectation(description: "Fetch Watchlist")
@@ -42,12 +95,17 @@ final class WKWatchlistDataControllerTests: XCTestCase {
         }
         
         XCTAssertEqual(watchlistToTest.items.count, 82, "Incorrect number of watchlist items returned")
+        XCTAssertEqual(watchlistToTest.activeFilterCount, 0, "Incorrect activeFilterCount")
         
         let enItems = watchlistToTest.items.filter { $0.project == enProject }
         let esItems = watchlistToTest.items.filter { $0.project == esProject }
+        let wikidataItems = watchlistToTest.items.filter { $0.project == .wikidata }
+        let commonsItems = watchlistToTest.items.filter { $0.project == .commons }
         
         XCTAssertEqual(enItems.count, 38, "Incorrect number of EN watchlist items returned")
         XCTAssertEqual(esItems.count, 13, "Incorrect number of ES watchlist items returned")
+        XCTAssertEqual(wikidataItems.count, 28, "Incorrect number of wikidata watchlist items returned")
+        XCTAssertEqual(commonsItems.count, 3, "Incorrect number of commons watchlist items returned")
         
         let first = watchlistToTest.items.first!
         XCTAssertEqual(first.title, "Talk:Cat", "Unexpected watchlist item title property")
@@ -77,6 +135,152 @@ final class WKWatchlistDataControllerTests: XCTestCase {
         }
         
         XCTAssertEqual(first.timestamp, testDate, "Unexpected watchlist item timestamp property")
+    }
+    
+    func testFetchWatchlistWithProjectFilter() {
+        let controller = WKWatchlistDataController()
+        
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [enProject, esProject], latestRevisions: .all, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [])
+        controller.saveFilterSettings(filterSettingsToSave)
+        
+        let expectation = XCTestExpectation(description: "Fetch Watchlist")
+        
+        var watchlistToTest: WKWatchlist?
+        controller.fetchWatchlist { result in
+            switch result {
+            case .success(let watchlist):
+                
+                watchlistToTest = watchlist
+                
+            case .failure(let error):
+                XCTFail("Failure fetching watchlist: \(error)")
+            }
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 10.0)
+        
+        guard let watchlistToTest else {
+            XCTFail("Missing watchlistToTest")
+            return
+        }
+        
+        XCTAssertEqual(watchlistToTest.items.count, 31, "Incorrect number of watchlist items returned")
+        XCTAssertEqual(watchlistToTest.activeFilterCount, 2, "Incorrect activeFilterCount")
+        
+        let enItems = watchlistToTest.items.filter { $0.project == enProject }
+        let esItems = watchlistToTest.items.filter { $0.project == esProject }
+        let wikidataItems = watchlistToTest.items.filter { $0.project == .wikidata }
+        let commonsItems = watchlistToTest.items.filter { $0.project == .commons }
+        
+        XCTAssertEqual(enItems.count, 0, "Incorrect number of EN watchlist items returned")
+        XCTAssertEqual(esItems.count, 0, "Incorrect number of ES watchlist items returned")
+        XCTAssertEqual(wikidataItems.count, 28, "Incorrect number of wikidata watchlist items returned")
+        XCTAssertEqual(commonsItems.count, 3, "Incorrect number of commons watchlist items returned")
+    }
+    
+    func testFetchWatchlistWithBotsFilter() {
+        let controller = WKWatchlistDataController()
+        
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [], latestRevisions: .all, activity: .all, automatedContributions: .bot, significance: .all, userRegistration: .all, offTypes: [])
+        controller.saveFilterSettings(filterSettingsToSave)
+        
+        let expectation = XCTestExpectation(description: "Fetch Watchlist")
+        
+        var watchlistToTest: WKWatchlist?
+        controller.fetchWatchlist { result in
+            switch result {
+            case .success(let watchlist):
+                
+                watchlistToTest = watchlist
+                
+            case .failure(let error):
+                XCTFail("Failure fetching watchlist: \(error)")
+            }
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 10.0)
+        
+        guard let watchlistToTest else {
+            XCTFail("Missing watchlistToTest")
+            return
+        }
+        
+        XCTAssertEqual(watchlistToTest.items.count, 2, "Incorrect number of watchlist items returned")
+        XCTAssertEqual(watchlistToTest.activeFilterCount, 1, "Incorrect activeFilterCount")
+        
+        let humanItems = watchlistToTest.items.filter { $0.isBot == false }
+        XCTAssertEqual(humanItems.count, 0)
+    }
+    
+    func testFetchWatchlistWithNoCacheAndNoInternetConnection() {
+        WKDataEnvironment.current.mediaWikiService = WKMockWatchlistMediaWikiServiceNoInternetConnection()
+        let controller = WKWatchlistDataController()
+        
+        let expectation = XCTestExpectation(description: "Fetch Watchlist")
+        
+        controller.fetchWatchlist { result in
+            switch result {
+            case .success:
+                
+                XCTFail("Unexpected success")
+                
+            case .failure:
+                break
+            }
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 10.0)
+    }
+    
+    func testFetchWatchlistWithCacheAndNoInternetConnection() {
+        
+        // First fetch successfully to populate cache
+        let controller = WKWatchlistDataController()
+        
+        let expectation1 = XCTestExpectation(description: "Fetch Watchlist with Internet Connection")
+        let expectation2 = XCTestExpectation(description: "Fetch Watchlist without Internet Connection")
+        var connectedWatchlistReturned: WKWatchlist? = nil
+        var disconnectedAndCachedWatchlistReturned: WKWatchlist? = nil
+        
+        controller.fetchWatchlist { result in
+            switch result {
+            case .success(let watchlist1):
+                
+                connectedWatchlistReturned = watchlist1
+                
+                // Drop Internet Connection
+                WKDataEnvironment.current.mediaWikiService = WKMockWatchlistMediaWikiServiceNoInternetConnection()
+                controller.service = WKDataEnvironment.current.mediaWikiService
+
+                // Fetch again, confirm it still succeeds
+                controller.fetchWatchlist { result in
+                    switch result {
+                    case .success(let watchlist2):
+                        disconnectedAndCachedWatchlistReturned = watchlist2
+                    case .failure:
+                        XCTFail("Unexpected disconnected failure")
+                    }
+                    
+                    expectation2.fulfill()
+                }
+            case .failure:
+                XCTFail("Unexpected connected failure")
+            }
+            
+            expectation1.fulfill()
+        }
+        
+        wait(for: [expectation1], timeout: 10.0)
+        wait(for: [expectation2], timeout: 10.0)
+        
+        XCTAssertEqual(connectedWatchlistReturned?.items.count, 82, "Incorrect number of watchlist items initially returned")
+        XCTAssertEqual(disconnectedAndCachedWatchlistReturned?.items.count, 82, "Incorrect number of watchlist items initially returned")
     }
     
     func testPostWatchArticleExpiryNever() {
