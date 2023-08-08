@@ -1,6 +1,21 @@
 import Foundation
 
-public enum WKProject: Equatable, Hashable {
+public enum WKProject: Equatable, Hashable, Identifiable, Codable {
+    public var id: String {
+        switch self {
+        case .commons:
+            return "commons"
+        case .wikidata:
+            return "wikidata"
+        case .wikipedia(let language):
+            if let languageVariantCode = language.languageVariantCode {
+                return "wikipedia-" + language.languageCode + "-" + languageVariantCode
+            } else {
+                return "wikipedia-" + language.languageCode
+            }
+        }
+    }
+    
     public static func == (lhs: WKProject, rhs: WKProject) -> Bool {
         switch lhs {
         case .wikipedia(let lhsLanguage):
