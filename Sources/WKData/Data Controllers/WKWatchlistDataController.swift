@@ -2,23 +2,111 @@ import Foundation
 import UIKit
 
 public class WKWatchlistDataController {
+    
+    var service = WKDataEnvironment.current.mediaWikiService
+    private let sharedCacheStore = WKDataEnvironment.current.sharedCacheStore
+    private let userDefaultsStore = WKDataEnvironment.current.userDefaultsStore
 
     public init() { }
+    
+    // MARK: Multiselect Helpers
+    
+    public func allWatchlistProjects() -> [WKProject] {
+        let appLanguages = WKDataEnvironment.current.appData.appLanguages
+        guard !appLanguages.isEmpty else {
+           return []
+        }
+        
+        var projects = WKProject.projectsFromLanguages(languages:appLanguages)
+        projects.append(.commons)
+        projects.append(.wikidata)
+        
+        return projects
+    }
+    
+    public func onWatchlistProjects() -> [WKProject] {
+        let allProjects = allWatchlistProjects()
+        let filterSettings = loadFilterSettings()
+        return allProjects.filter { !filterSettings.offProjects.contains($0) }
+    }
+    
+    public func offWatchlistProjects() -> [WKProject] {
+        let allProjects = allWatchlistProjects()
+        let filterSettings = loadFilterSettings()
+        return filterSettings.offProjects.filter { allProjects.contains($0) }
+    }
+    
+    public func allChangeTypes() -> [WKWatchlistFilterSettings.ChangeType] {
+        return WKWatchlistFilterSettings.ChangeType.allCases
+    }
+    
+    public func offChangeTypes() -> [WKWatchlistFilterSettings.ChangeType] {
+        let filterSettings = loadFilterSettings()
+        return filterSettings.offTypes.filter { allChangeTypes().contains($0) }
+    }
+    
+    // MARK: Filter Settings
+    
+    public func loadFilterSettings() -> WKWatchlistFilterSettings {
+        let key = WKUserDefaultsKey.watchlistFilterSettings.rawValue
+        return (try? userDefaultsStore?.load(key: key)) ?? WKWatchlistFilterSettings()
+    }
+    
+    public func saveFilterSettings(_ filterSettings: WKWatchlistFilterSettings) {
+        let key = WKUserDefaultsKey.watchlistFilterSettings.rawValue
+        try? userDefaultsStore?.save(key: key, value: filterSettings)
+    }
+    
+    public func activeFilterCount() -> Int {
+        
+        let filterSettings = loadFilterSettings()
+        
+        var numFilters = 0
+        numFilters += offWatchlistProjects().count
+        
+        if filterSettings.latestRevisions == .latestRevision {
+            numFilters += 1
+        }
+        
+        if filterSettings.activity != .all {
+            numFilters += 1
+        }
+        
+        if filterSettings.automatedContributions != .all {
+            numFilters += 1
+        }
+        
+        if filterSettings.significance != .all {
+            numFilters += 1
+        }
+        
+        if filterSettings.userRegistration != .all {
+            numFilters += 1
+        }
+        
+        let allTypes = WKWatchlistFilterSettings.ChangeType.allCases
+        let offTypes = filterSettings.offTypes.filter { allTypes.contains($0) }
+        numFilters += offTypes.count
+        
+        return numFilters
+    }
     
     // MARK: GET Watchlist Items
 
     public func fetchWatchlist(completion: @escaping (Result<WKWatchlist, Error>) -> Void) {
         
-        guard let service = WKDataEnvironment.current.mediaWikiService else {
+        guard let service else {
             completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
             return
         }
         
-        let appLanguages = WKDataEnvironment.current.appData.appLanguages
-        guard !appLanguages.isEmpty else {
-            completion(.failure(WKDataControllerError.appLanguagesUnavailable))
+        let projects = onWatchlistProjects()
+        guard !projects.isEmpty else {
+            completion(.failure(WKWatchlistError.failureDeterminingProjects))
             return
         }
+        
+        let filterSettings = loadFilterSettings()
         
         var parameters = [
                     "action": "query",
@@ -31,10 +119,8 @@ public class WKWatchlistDataController {
                     "format": "json",
                     "formatversion": "2"
                 ]
-
-        var projects = WKProject.projectsFromLanguages(languages:appLanguages)
-        projects.append(.commons)
-        projects.append(.wikidata)
+        
+        apply(filterSettings: filterSettings, to: &parameters)
         
         let group = DispatchGroup()
         var items: [WKWatchlist.Item] = []
@@ -42,6 +128,8 @@ public class WKWatchlistDataController {
         projects.forEach { project in
             errors[project] = []
         }
+        
+        let activeFilterCount = self.activeFilterCount()
         
         for project in projects {
             
@@ -81,8 +169,24 @@ public class WKWatchlistDataController {
                     
                     items.append(contentsOf: self.watchlistItems(from: query, project: project))
                     
+                    try? sharedCacheStore?.save(key: "Watchlists", project.id, value: apiResponse)
+                    
                 case .failure(let error):
-                    errors[project, default: []].append(WKDataControllerError.serviceError(error))
+                    var usedCache = false
+                    
+                    if (error as NSError).isInternetConnectionError {
+                        
+                        let cachedResult: WatchlistAPIResponse? = try? sharedCacheStore?.load(key: "Watchlists", project.id)
+                        
+                        if let query = cachedResult?.query {
+                            items.append(contentsOf: self.watchlistItems(from: query, project: project))
+                            usedCache = true
+                        }
+                    }
+                    
+                    if !usedCache {
+                        errors[project, default: []].append(WKDataControllerError.serviceError(error))
+                    }
                 }
             }
         }
@@ -93,7 +197,7 @@ public class WKWatchlistDataController {
             let failureProjects = errors.filter { !$0.value.isEmpty }
             
             if !successProjects.isEmpty {
-                completion(.success(WKWatchlist(items: items)))
+                completion(.success(WKWatchlist(items: items, activeFilterCount: activeFilterCount)))
                 return
             }
             
@@ -102,7 +206,7 @@ public class WKWatchlistDataController {
                 return
             }
             
-            completion(.success(WKWatchlist(items: items)))
+            completion(.success(WKWatchlist(items: items, activeFilterCount: activeFilterCount)))
         }
     }
     
@@ -134,11 +238,82 @@ public class WKWatchlistDataController {
         return items
     }
     
+    private func apply(filterSettings: WKWatchlistFilterSettings, to parameters: inout [String: String]) {
+        switch filterSettings.latestRevisions {
+        case .all, .notTheLatestRevision:
+            parameters["wlallrev"] = "1"
+        case .latestRevision:
+            break
+        }
+        
+        var wlshow: [String] = []
+        var wltype: [String] = []
+        
+        switch filterSettings.activity {
+        case .unseenChanges:
+            wlshow.append("unread")
+        case .seenChanges:
+            wlshow.append("!unread")
+        case .all:
+            break
+        }
+        
+        switch filterSettings.automatedContributions {
+        case .bot:
+            wlshow.append("bot")
+        case .human:
+            wlshow.append("!bot")
+        case .all:
+            break
+        }
+        
+        switch filterSettings.significance {
+        case .minorEdits:
+            wlshow.append("minor")
+        case .nonMinorEdits:
+            wlshow.append("!minor")
+        case .all:
+            break
+        }
+        
+        switch filterSettings.userRegistration {
+        case .unregistered:
+            wlshow.append("anon")
+        case .registered:
+            wlshow.append("!anon")
+        case .all:
+            break
+        }
+        
+        if !filterSettings.offTypes.contains(.pageEdits) {
+            wltype.append("edit")
+        }
+        
+        if !filterSettings.offTypes.contains(.pageCreations) {
+            wltype.append("new")
+        }
+        
+        if !filterSettings.offTypes.contains(.categoryChanges) {
+            wltype.append("categorize")
+        }
+        
+        if !filterSettings.offTypes.contains(.loggedActions) {
+            wltype.append("log")
+        }
+        
+        if !filterSettings.offTypes.contains(.wikidataEdits) {
+            wltype.append("external")
+        }
+        
+        parameters["wlshow"] = wlshow.joined(separator: "|")
+        parameters["wltype"] = wltype.joined(separator: "|")
+    }
+    
     // MARK: POST Watch Item
      
      public func watch(title: String, project: WKProject, expiry: WKWatchlistExpiryType, completion: @escaping (Result<Void, Error>) -> Void) {
 
-         guard let service = WKDataEnvironment.current.mediaWikiService else {
+         guard let service else {
              completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
              return
          }
@@ -179,7 +354,7 @@ public class WKWatchlistDataController {
      
      public func unwatch(title: String, project: WKProject, completion: @escaping (Result<Void, Error>) -> Void) {
 
-         guard let service = WKDataEnvironment.current.mediaWikiService else {
+         guard let service else {
              completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
              return
          }
@@ -219,7 +394,7 @@ public class WKWatchlistDataController {
     // MARK: GET Watch Status and Rollback Rights
      
      public func fetchWatchStatus(title: String, project: WKProject, needsRollbackRights: Bool = false, completion: @escaping (Result<WKPageWatchStatus, Error>) -> Void) {
-         guard let service = WKDataEnvironment.current.mediaWikiService else {
+         guard let service else {
              completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
              return
          }
@@ -268,7 +443,7 @@ public class WKWatchlistDataController {
     
     public func rollback(title: String, project: WKProject, username: String, completion: @escaping (Result<WKUndoOrRollbackResult, Error>) -> Void) {
         
-        guard let service = WKDataEnvironment.current.mediaWikiService else {
+        guard let service else {
             completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
             return
         }
@@ -310,7 +485,7 @@ public class WKWatchlistDataController {
     
     public func undo(title: String, revisionID: UInt, summary: String, username: String, project: WKProject, completion: @escaping (Result<WKUndoOrRollbackResult, Error>) -> Void) {
 
-        guard let service = WKDataEnvironment.current.mediaWikiService else {
+        guard let service else {
             completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
             return
         }
@@ -362,7 +537,7 @@ public class WKWatchlistDataController {
     
     private func fetchUndoRevisionSummaryPrefixText(revisionID: UInt, username: String, project: WKProject, completion: @escaping (Result<String, Error>) -> Void) {
         
-        guard let service = WKDataEnvironment.current.mediaWikiService else {
+        guard let service else {
             completion(.failure(WKDataControllerError.mediaWikiServiceUnavailable))
             return
         }

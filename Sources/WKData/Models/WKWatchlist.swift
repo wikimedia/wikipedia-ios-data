@@ -18,4 +18,5 @@ public struct WKWatchlist {
     }
     
     public let items: [Item]
+    public let activeFilterCount: Int
 }
