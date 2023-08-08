@@ -52,7 +52,7 @@ public class WKWatchlistDataController {
             parameters["variant"] = project.languageVariantCode
             
             group.enter()
-            let request = WKServiceRequest(url: url, method: .GET, parameters: parameters)
+            let request = WKMediaWikiServiceRequest(url: url, method: .GET, parameters: parameters)
             service.performDecodableGET(request: request) { [weak self] (result: Result<WatchlistAPIResponse, Error>) in
                 
                 guard let self else {
@@ -158,8 +158,8 @@ public class WKWatchlistDataController {
              return
          }
 
-         let request = WKServiceRequest(url: url, method: .POST, parameters: parameters)
-         service.perform(request: request, tokenType: .watch) { result in
+         let request = WKMediaWikiServiceRequest(url: url, method: .POST, tokenType: .watch, parameters: parameters)
+         service.perform(request: request) { result in
              switch result {
              case .success(let response):
                  guard let watched = (response?["watch"] as? [[String: Any]])?.first?["watched"] as? Bool,
@@ -199,8 +199,8 @@ public class WKWatchlistDataController {
              return
          }
 
-         let request = WKServiceRequest(url: url, method: .POST, parameters: parameters)
-         service.perform(request: request, tokenType: .watch) { result in
+         let request = WKMediaWikiServiceRequest(url: url, method: .POST, tokenType: .watch, parameters: parameters)
+         service.perform(request: request) { result in
              switch result {
              case .success(let response):
                  guard let unwatched = (response?["watch"] as? [[String: Any]])?.first?["unwatched"] as? Bool,
@@ -244,7 +244,7 @@ public class WKWatchlistDataController {
              return
          }
 
-         let request = WKServiceRequest(url: url, method: .GET, parameters: parameters)
+         let request = WKMediaWikiServiceRequest(url: url, method: .GET, parameters: parameters)
 
          service.performDecodableGET(request: request) { (result: Result<PageWatchStatusAndRollbackResponse, Error>) in
              switch result {
@@ -288,8 +288,8 @@ public class WKWatchlistDataController {
             return
         }
 
-        let request = WKServiceRequest(url: url, method: .POST, parameters: parameters)
-        service.perform(request: request, tokenType: .rollback) { result in
+        let request = WKMediaWikiServiceRequest(url: url, method: .POST, tokenType: .rollback, parameters: parameters)
+        service.perform(request: request) { result in
             switch result {
             case .success(let response):
                 guard let rollback = (response?["rollback"] as? [String: Any]),
@@ -335,8 +335,8 @@ public class WKWatchlistDataController {
                     return
                 }
 
-                let request = WKServiceRequest(url: url, method: .POST, parameters: parameters)
-                service.perform(request: request, tokenType: .csrf) { result in
+                let request = WKMediaWikiServiceRequest(url: url, method: .POST, tokenType: .csrf, parameters: parameters)
+                service.perform(request: request) { result in
                     switch result {
                     case .success(let response):
                         guard let edit = (response?["edit"] as? [String: Any]),
@@ -383,7 +383,7 @@ public class WKWatchlistDataController {
             return
         }
 
-        let request = WKServiceRequest(url: url, method: .GET, parameters: parameters)
+        let request = WKMediaWikiServiceRequest(url: url, method: .GET, parameters: parameters)
 
         service.performDecodableGET(request: request) { (result: Result<UndoRevisionSummaryTextResponse, Error>) in
             switch result {

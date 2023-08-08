@@ -118,7 +118,7 @@ public class WKMockWatchlistMediaWikiService: WKService {
         
     }
     
-    public func perform(request: WKData.WKServiceRequest, tokenType: WKData.WKServiceRequest.TokenType?, completion: @escaping (Result<[String : Any]?, Error>) -> Void) {
+    public func perform<R: WKServiceRequest>(request: R, completion: @escaping (Result<[String: Any]?, Error>) -> Void) {
         
         guard let jsonData = jsonData(for: request) else {
             completion(.failure(WKMockError.unableToPullData))
@@ -133,7 +133,7 @@ public class WKMockWatchlistMediaWikiService: WKService {
         completion(.success(jsonDict))
     }
     
-    public func performDecodableGET<T>(request: WKData.WKServiceRequest, completion: @escaping (Result<T, Error>) -> Void) where T : Decodable {
+    public func performDecodableGET<R: WKServiceRequest, T: Decodable>(request: R, completion: @escaping (Result<T, Error>) -> Void) {
         
         guard let jsonData = jsonData(for: request) else {
             completion(.failure(WKMockError.unableToPullData))
