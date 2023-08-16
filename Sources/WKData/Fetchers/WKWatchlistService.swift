@@ -32,6 +32,7 @@ public enum WKWatchlistExpiryType: String {
 
 public struct WKPageWatchStatus {
     public let watched: Bool
+    public let watchlistExpiry: Date?
     public let userHasRollbackRights: Bool?
 }
 
@@ -86,6 +87,7 @@ fileprivate struct PageWatchStatusAndRollbackResponse: Codable {
         struct Page: Codable {
             let title: String
             let watched: Bool
+            let watchlistexpiry: String?
         }
 
         struct UserInfo: Codable {
@@ -363,13 +365,20 @@ public class WKWatchlistService {
              switch result {
              case .success(let response):
 
-                 guard let watched = response.query.pages.first?.watched else {
+                 guard let firstPage = response.query.pages.first else {
                      completion(.failure(WKWatchlistServiceError.unexpectedResponse))
                      return
                  }
 
+                 let watched = firstPage.watched
                  let userHasRollbackRights = response.query.userinfo?.rights.contains("rollback")
-                 let status = WKPageWatchStatus(watched: watched, userHasRollbackRights: userHasRollbackRights)
+                 
+                 var watchlistExpiry: Date? = nil
+                 if let watchlistExpiryString = firstPage.watchlistexpiry {
+                     watchlistExpiry = DateFormatter.mediaWikiAPIDateFormatter.date(from: watchlistExpiryString)
+                 }
+                 
+                 let status = WKPageWatchStatus(watched: watched, watchlistExpiry: watchlistExpiry, userHasRollbackRights: userHasRollbackRights)
                  completion(.success(status))
              case .failure(let error):
                  completion(.failure(error))
