@@ -52,8 +52,8 @@ fileprivate struct WatchlistAPIResponse: Codable {
             let isAnon: Bool
             let isBot: Bool
             let timestampString: String
-            let commentWikitext: String
-            let commentHtml: String
+            let commentWikitext: String?
+            let commentHtml: String?
             let byteLength: UInt
             let oldByteLength: UInt
             
@@ -188,7 +188,6 @@ public class WKWatchlistService {
                 
                 switch result {
                 case .success(let apiResponse):
-                    
                     if let apiResponseErrors = apiResponse.errors,
                        !apiResponseErrors.isEmpty {
                         errors.append(contentsOf: apiResponseErrors)
@@ -236,8 +235,8 @@ public class WKWatchlistService {
                 isAnon: item.isAnon,
                 isBot: item.isBot,
                 timestamp: timestamp,
-                commentWikitext: item.commentWikitext,
-                commentHtml: item.commentHtml,
+                commentWikitext: item.commentWikitext ?? "",
+                commentHtml: item.commentHtml ?? "",
                 byteLength: item.byteLength,
                 oldByteLength: item.oldByteLength,
                 project: project)
