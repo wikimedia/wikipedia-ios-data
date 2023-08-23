@@ -161,7 +161,6 @@
         "oldlen": 5141,
         "newlen": 5209,
         "timestamp": "2023-05-19T22:41:00Z",
-        "comment": "",
         "parsedcomment": ""
       },
       {
@@ -179,8 +178,7 @@
         "oldlen": 5089,
         "newlen": 5141,
         "timestamp": "2023-05-19T22:40:24Z",
-        "comment": "",
-        "parsedcomment": ""
+        "comment": ""
       },
       {
         "type": "edit",
@@ -197,8 +195,6 @@
         "oldlen": 5018,
         "newlen": 5089,
         "timestamp": "2023-05-18T17:30:32Z",
-        "comment": "",
-        "parsedcomment": ""
       },
       {
         "type": "edit",
