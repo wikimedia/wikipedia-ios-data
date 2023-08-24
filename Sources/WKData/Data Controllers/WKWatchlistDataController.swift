@@ -227,8 +227,8 @@ public class WKWatchlistDataController {
                 isAnon: item.isAnon,
                 isBot: item.isBot,
                 timestamp: timestamp,
-                commentWikitext: item.commentWikitext,
-                commentHtml: item.commentHtml,
+                commentWikitext: item.commentWikitext ?? "",
+                commentHtml: item.commentHtml ?? "",
                 byteLength: item.byteLength,
                 oldByteLength: item.oldByteLength,
                 project: project)
@@ -425,13 +425,20 @@ public class WKWatchlistDataController {
              switch result {
              case .success(let response):
 
-                 guard let watched = response.query.pages.first?.watched else {
-                     completion(.failure(WKDataControllerError.unexpectedResponse))
-                     return
-                 }
+                guard let firstPage = response.query.pages.first else {
+                 completion(.failure(WKDataControllerError.unexpectedResponse))
+                 return
+                }
 
-                 let userHasRollbackRights = response.query.userinfo?.rights.contains("rollback")
-                 let status = WKPageWatchStatus(watched: watched, userHasRollbackRights: userHasRollbackRights)
+                let watched = firstPage.watched
+                let userHasRollbackRights = response.query.userinfo?.rights.contains("rollback")
+                 
+                var watchlistExpiry: Date? = nil
+                if let watchlistExpiryString = firstPage.watchlistexpiry {
+                  watchlistExpiry = DateFormatter.mediaWikiAPIDateFormatter.date(from: watchlistExpiryString)
+                }
+
+                let status = WKPageWatchStatus(watched: watched, watchlistExpiry: watchlistExpiry, userHasRollbackRights: userHasRollbackRights)
                  completion(.success(status))
              case .failure(let error):
                  completion(.failure(WKDataControllerError.serviceError(error)))
@@ -594,8 +601,8 @@ private extension WKWatchlistDataController {
                 let isAnon: Bool
                 let isBot: Bool
                 let timestampString: String
-                let commentWikitext: String
-                let commentHtml: String
+                let commentWikitext: String?
+                let commentHtml: String?
                 let byteLength: UInt
                 let oldByteLength: UInt
                 
@@ -628,6 +635,7 @@ private extension WKWatchlistDataController {
             struct Page: Codable {
                 let title: String
                 let watched: Bool
+                let watchlistexpiry: String?
             }
 
             struct UserInfo: Codable {
