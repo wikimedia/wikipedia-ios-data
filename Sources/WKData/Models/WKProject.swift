@@ -17,29 +17,7 @@ public enum WKProject: Equatable, Hashable, Identifiable, Codable {
     }
     
     public static func == (lhs: WKProject, rhs: WKProject) -> Bool {
-        switch lhs {
-        case .wikipedia(let lhsLanguage):
-            switch rhs {
-            case .wikipedia(let rhsLanguage):
-                return lhsLanguage == rhsLanguage
-            default:
-                return false
-            }
-        case .commons:
-            switch rhs {
-            case .commons:
-                return true
-            default:
-                return false
-            }
-        case .wikidata:
-            switch rhs {
-            case .wikidata:
-                return true
-            default:
-                return false
-            }
-        }
+        return lhs.id == rhs.id
     }
     
     public func hash(into hasher: inout Hasher) {

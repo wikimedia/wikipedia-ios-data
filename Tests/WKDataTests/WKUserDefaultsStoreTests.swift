@@ -1,10 +1,3 @@
-//
-//  WKUserDefaultsStoreTests.swift
-//  
-//
-//  Created by Toni Sevener on 8/8/23.
-//
-
 import XCTest
 @testable import WKData
 

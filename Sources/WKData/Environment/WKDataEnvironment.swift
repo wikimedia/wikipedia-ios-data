@@ -14,6 +14,6 @@ public final class WKDataEnvironment: ObservableObject {
 
     @Published public var appData = WKAppData(appLanguages: [])
     public var mediaWikiService: WKService?
-    public var userDefaultsStore: WKKeyValueStore? = WKUserDefaultsStore()
+    public internal(set) var userDefaultsStore: WKKeyValueStore? = WKUserDefaultsStore()
     public var sharedCacheStore: WKKeyValueStore?
 }
