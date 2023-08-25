@@ -8,15 +8,27 @@ fileprivate enum WKMockError: Error {
     case unableToDeserialize
 }
 
-fileprivate extension WKData.WKNetworkRequest {
-    var isWatchlistGetList: Bool {
+fileprivate extension WKData.WKServiceRequest {
+    var isWatchlistGetListNoFilter: Bool {
         guard let action = parameters?["action"] as? String,
-              let list = parameters?["list"] as? String else {
+              let list = parameters?["list"] as? String,
+              let wlshow = parameters?["wlshow"] as? String else {
             return false
         }
         
         return method == .GET && action == "query"
-            && list == "watchlist"
+            && list == "watchlist" && wlshow == ""
+    }
+    
+    var isWatchlistGetListBotOnly: Bool {
+        guard let action = parameters?["action"] as? String,
+              let list = parameters?["list"] as? String,
+              let wlshow = parameters?["wlshow"] as? String else {
+            return false
+        }
+        
+        return method == .GET && action == "query"
+            && list == "watchlist" && wlshow == "bot"
     }
     
     var isWatchlistPostWatchArticleExpiryNever: Bool {
@@ -110,7 +122,7 @@ fileprivate extension WKData.WKNetworkRequest {
     }
 }
 
-public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
+public class WKMockWatchlistMediaWikiService: WKService {
     
     public var randomizeGetWatchStatusResponse: Bool = false // used in Components Demo app
     
@@ -118,7 +130,7 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
         
     }
     
-    public func perform(request: WKData.WKNetworkRequest, tokenType: WKData.WKNetworkRequest.TokenType?, completion: @escaping (Result<[String : Any]?, Error>) -> Void) {
+    public func perform<R: WKServiceRequest>(request: R, completion: @escaping (Result<[String: Any]?, Error>) -> Void) {
         
         guard let jsonData = jsonData(for: request) else {
             completion(.failure(WKMockError.unableToPullData))
@@ -133,7 +145,7 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
         completion(.success(jsonDict))
     }
     
-    public func performDecodableGET<T>(request: WKData.WKNetworkRequest, completion: @escaping (Result<T, Error>) -> Void) where T : Decodable {
+    public func performDecodableGET<R: WKServiceRequest, T: Decodable>(request: R, completion: @escaping (Result<T, Error>) -> Void) {
         
         guard let jsonData = jsonData(for: request) else {
             completion(.failure(WKMockError.unableToPullData))
@@ -150,8 +162,8 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
         completion(.success(response))
     }
     
-    private func jsonData(for request: WKData.WKNetworkRequest) -> Data? {
-        if request.isWatchlistGetList {
+    private func jsonData(for request: WKData.WKServiceRequest) -> Data? {
+        if request.isWatchlistGetListNoFilter {
             guard let host = request.url?.host,
                   let index = host.firstIndex(of: "."),
                   let subdomain = request.url?.host?.prefix(upTo: index) else {
@@ -165,6 +177,28 @@ public class WKMockWatchlistMediaWikiNetworkService: WKNetworkService {
                 resourceName = "watchlist-get-list-wikidata"
             } else {
                 resourceName = "watchlist-get-list-\(subdomain)"
+            }
+            
+            guard let url = Bundle.module.url(forResource: resourceName, withExtension: "json"),
+                  let jsonData = try? Data(contentsOf: url) else {
+                return nil
+            }
+            
+            return jsonData
+        } else if request.isWatchlistGetListBotOnly {
+            guard let host = request.url?.host,
+                  let index = host.firstIndex(of: "."),
+                  let subdomain = request.url?.host?.prefix(upTo: index) else {
+                return nil
+            }
+            
+            let resourceName: String
+            if subdomain == "commons" {
+                resourceName = "watchlist-get-list-commons-bot-only"
+            } else if (request.url?.host ?? "").contains("wikidata") {
+                resourceName = "watchlist-get-list-wikidata-bot-only"
+            } else {
+                resourceName = "watchlist-get-list-\(subdomain)-bot-only"
             }
             
             guard let url = Bundle.module.url(forResource: resourceName, withExtension: "json"),
