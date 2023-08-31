@@ -15,9 +15,3 @@ public enum WKUserDefaultsStoreError: Error {
     case failureDecodingJSON(Error)
     case failureEncodingJSON(Error)
 }
-
-// MARK: Feature-specific
-
-public enum WKWatchlistError: Error {
-    case failureDeterminingProjects
-}
