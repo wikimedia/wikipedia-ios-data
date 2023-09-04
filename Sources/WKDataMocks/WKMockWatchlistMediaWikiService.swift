@@ -125,6 +125,7 @@ fileprivate extension WKData.WKServiceRequest {
 public class WKMockWatchlistMediaWikiService: WKService {
     
     public var randomizeGetWatchStatusResponse: Bool = false // used in Components Demo app
+    public var showEmptyStates: Bool = false // used in Components Demo app
     
     public init() {
         
@@ -164,27 +165,40 @@ public class WKMockWatchlistMediaWikiService: WKService {
     
     private func jsonData(for request: WKData.WKServiceRequest) -> Data? {
         if request.isWatchlistGetListNoFilter {
-            guard let host = request.url?.host,
-                  let index = host.firstIndex(of: "."),
-                  let subdomain = request.url?.host?.prefix(upTo: index) else {
-                return nil
-            }
-            
-            let resourceName: String
-            if subdomain == "commons" {
-                resourceName = "watchlist-get-list-commons"
-            } else if (request.url?.host ?? "").contains("wikidata") {
-                resourceName = "watchlist-get-list-wikidata"
+            if showEmptyStates {
+
+                let resourceName: String
+                resourceName = "watchlist-get-empty-list"
+
+                guard let url = Bundle.module.url(forResource: resourceName, withExtension: "json"),
+                      let jsonData = try? Data(contentsOf: url) else {
+                    return nil
+                }
+
+                return jsonData
             } else {
-                resourceName = "watchlist-get-list-\(subdomain)"
+                guard let host = request.url?.host,
+                      let index = host.firstIndex(of: "."),
+                      let subdomain = request.url?.host?.prefix(upTo: index) else {
+                    return nil
+                }
+
+                let resourceName: String
+                if subdomain == "commons" {
+                    resourceName = "watchlist-get-list-commons"
+                } else if (request.url?.host ?? "").contains("wikidata") {
+                    resourceName = "watchlist-get-list-wikidata"
+                } else {
+                    resourceName = "watchlist-get-list-\(subdomain)"
+                }
+
+                guard let url = Bundle.module.url(forResource: resourceName, withExtension: "json"),
+                      let jsonData = try? Data(contentsOf: url) else {
+                    return nil
+                }
+
+                return jsonData
             }
-            
-            guard let url = Bundle.module.url(forResource: resourceName, withExtension: "json"),
-                  let jsonData = try? Data(contentsOf: url) else {
-                return nil
-            }
-            
-            return jsonData
         } else if request.isWatchlistGetListBotOnly {
             guard let host = request.url?.host,
                   let index = host.firstIndex(of: "."),
