@@ -102,7 +102,7 @@ public class WKWatchlistDataController {
         
         let projects = onWatchlistProjects()
         guard !projects.isEmpty else {
-            completion(.failure(WKWatchlistError.failureDeterminingProjects))
+            completion(.success(WKWatchlist(items: [], activeFilterCount: offWatchlistProjects().count)))
             return
         }
         
