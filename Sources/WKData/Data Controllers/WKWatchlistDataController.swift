@@ -112,7 +112,6 @@ public class WKWatchlistDataController {
                     "action": "query",
                     "list": "watchlist",
                     "wllimit": "500",
-                    "wlallrev": "1",
                     "wlprop": "ids|title|flags|comment|parsedcomment|timestamp|sizes|user|loginfo",
                     "errorsuselocal": "1",
                     "errorformat": "html",
