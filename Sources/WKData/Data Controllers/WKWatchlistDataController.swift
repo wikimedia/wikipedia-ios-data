@@ -239,7 +239,7 @@ public class WKWatchlistDataController {
     
     private func apply(filterSettings: WKWatchlistFilterSettings, to parameters: inout [String: String]) {
         switch filterSettings.latestRevisions {
-        case .all, .notTheLatestRevision:
+        case .notTheLatestRevision:
             parameters["wlallrev"] = "1"
         case .latestRevision:
             break

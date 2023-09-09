@@ -33,7 +33,7 @@ final class WKWatchlistDataControllerTests: XCTestCase {
     
     func testOnOffWatchlistProjects() {
         let controller = WKWatchlistDataController()
-        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [.wikidata, .commons], latestRevisions: .all, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [])
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [.wikidata, .commons], latestRevisions: .notTheLatestRevision, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [])
         controller.saveFilterSettings(filterSettingsToSave)
         XCTAssertEqual(controller.onWatchlistProjects(), [enProject, esProject])
         XCTAssertEqual(controller.offWatchlistProjects(), [.wikidata, .commons])
@@ -41,7 +41,7 @@ final class WKWatchlistDataControllerTests: XCTestCase {
     
     func testAllOffChangeTypes() {
         let controller = WKWatchlistDataController()
-        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [], latestRevisions: .all, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [.categoryChanges, .pageCreations])
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [], latestRevisions: .notTheLatestRevision, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [.categoryChanges, .pageCreations])
         controller.saveFilterSettings(filterSettingsToSave)
         XCTAssertEqual(controller.allChangeTypes(), [.pageEdits, .pageCreations, .categoryChanges, .wikidataEdits, .loggedActions])
         XCTAssertEqual(controller.offChangeTypes(), [.categoryChanges, .pageCreations])
@@ -140,7 +140,7 @@ final class WKWatchlistDataControllerTests: XCTestCase {
     func testFetchWatchlistWithProjectFilter() {
         let controller = WKWatchlistDataController()
         
-        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [enProject, esProject], latestRevisions: .all, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [])
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [enProject, esProject], latestRevisions: .notTheLatestRevision, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [])
         controller.saveFilterSettings(filterSettingsToSave)
         
         let expectation = XCTestExpectation(description: "Fetch Watchlist")
@@ -183,7 +183,7 @@ final class WKWatchlistDataControllerTests: XCTestCase {
     func testFetchWatchlistWithBotsFilter() {
         let controller = WKWatchlistDataController()
         
-        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [], latestRevisions: .all, activity: .all, automatedContributions: .bot, significance: .all, userRegistration: .all, offTypes: [])
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [], latestRevisions: .notTheLatestRevision, activity: .all, automatedContributions: .bot, significance: .all, userRegistration: .all, offTypes: [])
         controller.saveFilterSettings(filterSettingsToSave)
         
         let expectation = XCTestExpectation(description: "Fetch Watchlist")
