@@ -180,6 +180,38 @@ final class WKWatchlistDataControllerTests: XCTestCase {
         XCTAssertEqual(commonsItems.count, 3, "Incorrect number of commons watchlist items returned")
     }
     
+    func testFetchWatchlistWithAllProjectsPlusOneFilter() {
+        let controller = WKWatchlistDataController()
+        
+        let filterSettingsToSave = WKWatchlistFilterSettings(offProjects: [enProject, esProject, .wikidata, .commons], latestRevisions: .latestRevision, activity: .all, automatedContributions: .all, significance: .all, userRegistration: .all, offTypes: [])
+        controller.saveFilterSettings(filterSettingsToSave)
+        
+        let expectation = XCTestExpectation(description: "Fetch Watchlist")
+        
+        var watchlistToTest: WKWatchlist?
+        controller.fetchWatchlist { result in
+            switch result {
+            case .success(let watchlist):
+                
+                watchlistToTest = watchlist
+                
+            case .failure(let error):
+                XCTFail("Failure fetching watchlist: \(error)")
+            }
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 10.0)
+        
+        guard let watchlistToTest else {
+            XCTFail("Missing watchlistToTest")
+            return
+        }
+        
+        XCTAssertEqual(watchlistToTest.activeFilterCount, 5, "Incorrect activeFilterCount")
+    }
+    
     func testFetchWatchlistWithBotsFilter() {
         let controller = WKWatchlistDataController()
         

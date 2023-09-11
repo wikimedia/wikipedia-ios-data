@@ -100,9 +100,11 @@ public class WKWatchlistDataController {
             return
         }
         
+        let activeFilterCount = self.activeFilterCount()
+        
         let projects = onWatchlistProjects()
         guard !projects.isEmpty else {
-            completion(.success(WKWatchlist(items: [], activeFilterCount: offWatchlistProjects().count)))
+            completion(.success(WKWatchlist(items: [], activeFilterCount: activeFilterCount)))
             return
         }
         
@@ -127,8 +129,6 @@ public class WKWatchlistDataController {
         projects.forEach { project in
             errors[project] = []
         }
-        
-        let activeFilterCount = self.activeFilterCount()
         
         for project in projects {
             
